@@ -20,27 +20,87 @@
     },
     {
       "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "env-supabase-url",
+              "name": "SUPABASE_URL",
+              "value": "={{ $env.SUPABASE_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "env-supabase-key",
+              "name": "SUPABASE_SERVICE_KEY",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}",
+              "type": "string"
+            },
+            {
+              "id": "env-gemini",
+              "name": "GEMINI_API_KEY",
+              "value": "={{ $env.GEMINI_API_KEY }}",
+              "type": "string"
+            },
+            {
+              "id": "env-evolution-url",
+              "name": "EVOLUTION_URL",
+              "value": "={{ $env.EVOLUTION_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "env-evolution-instance",
+              "name": "EVOLUTION_INSTANCE",
+              "value": "={{ $env.EVOLUTION_INSTANCE }}",
+              "type": "string"
+            },
+            {
+              "id": "env-evolution-key",
+              "name": "EVOLUTION_API_KEY",
+              "value": "={{ $env.EVOLUTION_API_KEY }}",
+              "type": "string"
+            },
+            {
+              "id": "env-push-url",
+              "name": "PUSH_SERVER_URL",
+              "value": "={{ $env.PUSH_SERVER_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "env-push-secret",
+              "name": "PUSH_SERVER_SECRET",
+              "value": "={{ $env.PUSH_SERVER_SECRET }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "edit-fields-env",
+      "name": "Variáveis de Ambiente",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
+        "url": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "apikey", "value": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": []
-        },
+        "bodyParameters": { "parameters": [] },
         "options": {}
       },
       "id": "buscar-habitos",
       "name": "Buscar Hábitos Pendentes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [220, 300]
+      "position": [440, 300]
     },
     {
       "parameters": {
@@ -51,12 +111,12 @@
       "name": "Separar em Itens",
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 2,
-      "position": [440, 300]
+      "position": [660, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $node['Variáveis de Ambiente'].json.GEMINI_API_KEY }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -65,57 +125,57 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Você é um assistente de saúde com tom {{ $json.tom }}. Crie um lembrete curto (máximo 2 frases) e motivador para {{ $json.nome_usuario }} realizar o hábito: {{ $json.nome_habito }}. Seja {{ $json.tom === 'amigavel' ? 'leve e acolhedor' : $json.tom === 'direto' ? 'objetivo e prático' : 'energético e inspirador' }}. Responda apenas com o texto do lembrete, sem aspas.\"\n    }]\n  }]\n}",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Você é um assistente de saúde. Crie um lembrete curto (máximo 2 frases) e motivador para {{ $json.nome_usuario }} realizar o hábito: {{ $json.nome_habito }}. Tom: {{ $json.tom === 'amigavel' ? 'leve e acolhedor' : $json.tom === 'direto' ? 'objetivo e prático' : 'energético e inspirador' }}. Responda apenas com o texto do lembrete, sem aspas.\"\n    }]\n  }]\n}",
         "options": {}
       },
       "id": "gemini-reminder",
       "name": "Gerar Lembrete (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [660, 300]
+      "position": [880, 300]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "extract-message",
+              "id": "msg",
               "name": "message",
               "value": "={{ $json.candidates[0].content.parts[0].text.trim() }}",
               "type": "string"
             },
             {
-              "id": "keep-user",
+              "id": "uid",
               "name": "user_id",
               "value": "={{ $node['Separar em Itens'].json.user_id }}",
               "type": "string"
             },
             {
-              "id": "keep-habit",
+              "id": "hid",
               "name": "habit_id",
               "value": "={{ $node['Separar em Itens'].json.habit_id }}",
               "type": "string"
             },
             {
-              "id": "keep-whatsapp",
+              "id": "wpp",
               "name": "whatsapp",
               "value": "={{ $node['Separar em Itens'].json.whatsapp }}",
               "type": "string"
             },
             {
-              "id": "keep-push",
+              "id": "ptk",
               "name": "push_token",
               "value": "={{ $node['Separar em Itens'].json.push_token }}",
               "type": "string"
             },
             {
-              "id": "keep-canais",
+              "id": "can",
               "name": "canais",
               "value": "={{ $node['Separar em Itens'].json.canais }}",
               "type": "array"
             },
             {
-              "id": "keep-nome",
+              "id": "hab",
               "name": "nome_habito",
               "value": "={{ $node['Separar em Itens'].json.nome_habito }}",
               "type": "string"
@@ -128,23 +188,13 @@
       "name": "Extrair Mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [880, 300]
+      "position": [1100, 300]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
-            {
-              "value1": "={{ $json.whatsapp }}",
-              "operation": "isNotEmpty"
-            }
-          ],
-          "boolean": [
-            {
-              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}",
-              "value2": true
-            }
-          ]
+          "string": [{ "value1": "={{ $json.whatsapp }}", "operation": "isNotEmpty" }],
+          "boolean": [{ "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}", "value2": true }]
         },
         "combineOperation": "all"
       },
@@ -152,16 +202,16 @@
       "name": "Tem WhatsApp?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1100, 180]
+      "position": [1320, 180]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "url": "={{ $node['Variáveis de Ambiente'].json.EVOLUTION_URL }}/message/sendText/{{ $node['Variáveis de Ambiente'].json.EVOLUTION_INSTANCE }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "apikey", "value": "={{ $node['Variáveis de Ambiente'].json.EVOLUTION_API_KEY }}" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
@@ -174,23 +224,13 @@
       "name": "Enviar WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1320, 80]
+      "position": [1540, 80]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
-            {
-              "value1": "={{ $json.push_token }}",
-              "operation": "isNotEmpty"
-            }
-          ],
-          "boolean": [
-            {
-              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}",
-              "value2": true
-            }
-          ]
+          "string": [{ "value1": "={{ $json.push_token }}", "operation": "isNotEmpty" }],
+          "boolean": [{ "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}", "value2": true }]
         },
         "combineOperation": "all"
       },
@@ -198,17 +238,17 @@
       "name": "Tem Push Token?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1100, 420]
+      "position": [1320, 420]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PUSH_SERVER_URL }}/send-push",
+        "url": "={{ $node['Variáveis de Ambiente'].json.PUSH_SERVER_URL }}/send-push",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             { "name": "Content-Type", "value": "application/json" },
-            { "name": "x-api-key", "value": "={{ $env.PUSH_SERVER_SECRET }}" }
+            { "name": "x-api-key", "value": "={{ $node['Variáveis de Ambiente'].json.PUSH_SERVER_SECRET }}" }
           ]
         },
         "sendBody": true,
@@ -220,11 +260,14 @@
       "name": "Enviar Web Push",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1320, 380]
+      "position": [1540, 380]
     }
   ],
   "connections": {
     "Cron (15 min)": {
+      "main": [[{ "node": "Variáveis de Ambiente", "type": "main", "index": 0 }]]
+    },
+    "Variáveis de Ambiente": {
       "main": [[{ "node": "Buscar Hábitos Pendentes", "type": "main", "index": 0 }]]
     },
     "Buscar Hábitos Pendentes": {
