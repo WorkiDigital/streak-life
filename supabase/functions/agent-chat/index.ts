@@ -6,20 +6,164 @@ import {
   buildContextPrompt,
   callGemini,
   getAdminClient,
-  getUserClient,
+  getAuthUser,
   jsonResponse,
   loadAgentContext,
   parseAgentBlocks,
   sanitizeAgentContent,
 } from '../_shared/agent.ts'
 
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function firstMatchNumber(text: string, regex: RegExp) {
+  const match = text.match(regex)
+  return match ? Number(match[1].replace(',', '.')) : null
+}
+
+function cleanClock(value: string | null) {
+  if (!value) return null
+  const match = value.match(/(\d{1,2})(?::|h)?(\d{2})?/)
+  if (!match) return null
+  const hour = Math.min(23, Math.max(0, Number(match[1])))
+  const minute = Math.min(59, Math.max(0, Number(match[2] ?? '00')))
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+function addMinutes(time: string, minutes: number) {
+  const [hour, minute] = time.split(':').map(Number)
+  const total = (hour * 60 + minute + minutes + 24 * 60) % (24 * 60)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+function timesEveryTwoHours(start = '08:00', end = '18:00') {
+  const [startHour] = start.split(':').map(Number)
+  const [endHour] = end.split(':').map(Number)
+  const times = []
+  for (let hour = Math.max(6, startHour); hour <= Math.min(22, endHour); hour += 2) {
+    times.push(`${String(hour).padStart(2, '0')}:00`)
+  }
+  return times.length ? times : ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00']
+}
+
+function hasAffirmedRisk(text: string) {
+  const risks = ['compuls', 'purga', 'laxante', 'diuretic', 'jejum extremo', 'culpa intensa', 'vomit', 'restricao severa']
+  return risks.some((risk) => {
+    const index = text.indexOf(risk)
+    if (index < 0) return false
+    const sentenceStart = Math.max(
+      text.lastIndexOf('.', index),
+      text.lastIndexOf('\n', index),
+      text.lastIndexOf(';', index)
+    )
+    const prefix = text.slice(Math.max(0, sentenceStart + 1), index)
+    return !/\b(sem|nao|nunca)\b/.test(prefix)
+  })
+}
+
+function buildFallbackSetup(context: any) {
+  const allText = normalizeText(
+    (context.messages ?? [])
+      .map((item: any) => item.content)
+      .join('\n')
+  )
+
+  if (hasAffirmedRisk(allText)) return null
+
+  const idade = firstMatchNumber(allText, /(\d{2})\s*anos/)
+  const altura_cm = firstMatchNumber(allText, /(\d{3})\s*cm/)
+  const peso_kg = firstMatchNumber(allText, /(?:peso|peso atual|estou com|tenho)\D{0,20}(\d{2,3}(?:[,.]\d+)?)\s*kg/)
+    ?? firstMatchNumber(allText, /(\d{2,3}(?:[,.]\d+)?)\s*kg/)
+  const peso_meta_kg = firstMatchNumber(allText, /meta\D{0,30}(\d{2,3}(?:[,.]\d+)?)\s*kg/)
+  const dias_treino = firstMatchNumber(allText, /(\d)\s*(?:dias|x)\s*(?:por\s*)?semana/)
+
+  if (!idade || !altura_cm || !peso_kg || !peso_meta_kg) return null
+
+  const wake = cleanClock(allText.match(/acord\w*\D{0,12}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '06:00'
+  const treinoHora = cleanClock(allText.match(/trein\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '18:30'
+  const jantarHora = cleanClock(allText.match(/jant\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '20:00'
+  const sleep = cleanClock(allText.match(/(?:durmo|dormir|sono)\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '23:00'
+  const hydrationStart = addMinutes(wake, 120)
+  const hydrationEnd = addMinutes(jantarHora, -120)
+
+  const sexo = /\b(homem|masculino|sexo m|sou m)\b/.test(allText)
+    ? 'M'
+    : /\b(mulher|feminino|sexo f|sou f)\b/.test(allText) ? 'F' : null
+
+  const tipo_treino = /musculacao|forca|academia/.test(allText)
+    ? 'forca'
+    : /corrida|correr/.test(allText) ? 'corrida' : /trein/.test(allText) ? 'geral' : null
+
+  const canais = context.profile?.whatsapp ? ['push', 'whatsapp'] : ['push']
+  const treinoDias = dias_treino && dias_treino >= 5
+    ? [1, 2, 3, 4, 5]
+    : dias_treino === 4 ? [1, 2, 4, 5] : dias_treino === 3 ? [1, 3, 5] : [1, 3, 5]
+
+  return {
+    perfil: {
+      nome: context.profile?.nome,
+      idade,
+      sexo,
+      altura_cm,
+      peso_kg,
+      peso_meta_kg,
+      nivel_atividade: /sedentari/.test(allText) ? 'sedentario' : /leve/.test(allText) ? 'leve' : /moderad/.test(allText) ? 'moderado' : 'leve',
+      treina: /trein|musculacao|academia|corrida/.test(allText),
+      dias_treino: dias_treino ?? null,
+      tipo_treino,
+      timezone: context.profile?.timezone ?? 'America/Fortaleza',
+      tom_preferido: context.profile?.tom_preferido ?? 'amigavel',
+    },
+    lembretes: [
+      {
+        habito: 'Beber agua',
+        categoria: 'hidratacao',
+        horarios: timesEveryTwoHours(hydrationStart, hydrationEnd),
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+      {
+        habito: 'Treino',
+        categoria: 'treino',
+        horarios: [treinoHora],
+        dias_semana: treinoDias,
+        canais,
+      },
+      {
+        habito: 'Jantar no horario',
+        categoria: 'alimentacao',
+        horarios: [jantarHora],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+      {
+        habito: 'Reduzir telas',
+        categoria: 'tela',
+        horarios: [addMinutes(sleep, -60)],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais: ['push'],
+      },
+      {
+        habito: 'Dormir cedo',
+        categoria: 'sono',
+        horarios: [sleep],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+    ],
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
   try {
     const authHeader = req.headers.get('Authorization') ?? ''
-    const userClient = getUserClient(authHeader)
-    const { data: { user }, error: userError } = await userClient.auth.getUser()
+    const { user, error: userError } = await getAuthUser(authHeader)
     if (userError || !user) return jsonResponse({ error: 'Nao autenticado' }, { status: 401 })
 
     const { message = '', source = 'app', mode = 'chat' } = await req.json().catch(() => ({}))
@@ -43,17 +187,60 @@ serve(async (req: Request) => {
     }))
 
     const syntheticPrompt = mode === 'onboarding'
-      ? 'Inicie ou continue o onboarding. Faca somente a proxima pergunta necessaria. Se ja houver dados suficientes, entregue o plano e emita SETUP.'
+      ? `Voce esta no onboarding. Avalie a conversa e a ultima resposta do usuario.
+Se ainda faltar dado essencial de seguranca ou rotina, faca somente a proxima pergunta.
+Se ja houver dados suficientes de triagem, anamnese, rotina, objetivo e ausencia de sinais de risco, voce DEVE entregar o plano e emitir um bloco SETUP completo com perfil e lembretes.
+Nao faca perguntas extras quando ja for possivel configurar horarios seguros e praticos.`
       : 'Continue a conversa de forma util. Se a mensagem do usuario indicar conclusao, ajuste ou adiamento, emita o bloco invisivel adequado.'
 
     const aiInput = [
       { role: 'user', content: buildContextPrompt(context) },
+      { role: 'user', content: syntheticPrompt },
       ...history,
-      ...(cleanUserMessage ? [] : [{ role: 'user', content: syntheticPrompt }]),
     ]
 
     const raw = await callGemini(SYSTEM_PROMPT, aiInput)
-    const blocks = parseAgentBlocks(raw)
+    let blocks = parseAgentBlocks(raw)
+
+    if (
+      mode === 'onboarding' &&
+      !blocks.some((block) => block.type === 'SETUP' || block.type === 'SETUP_UPDATE')
+    ) {
+      const setupOnlyPrompt = `
+Tarefa interna de configuracao. Analise o historico do onboarding.
+Se houver dados suficientes de perfil, objetivo, rotina, horarios, treino e triagem sem sinais de risco, responda SOMENTE com um bloco HTML SETUP JSON estrito.
+Se faltar alguma informacao essencial ou houver sinal de risco, responda somente NEED_MORE.
+
+Regras do SETUP:
+- Inclua perfil com idade, sexo, altura_cm, peso_kg, peso_meta_kg, nivel_atividade, treina, dias_treino, tipo_treino, timezone e tom_preferido quando disponiveis.
+- Inclua lembretes praticos para hidratacao, treino, alimentacao/jantar, tela e sono quando fizerem sentido.
+- Use horarios no formato HH:mm.
+- Use dias_semana 0 a 6.
+- Use canais ["push"] quando o usuario nao informou WhatsApp.
+- Nao escreva explicacoes fora do bloco.
+`.trim()
+
+      const setupRaw = await callGemini(SYSTEM_PROMPT, [
+        { role: 'user', content: buildContextPrompt(context) },
+        ...history,
+        { role: 'user', content: setupOnlyPrompt },
+      ])
+      const setupBlocks = parseAgentBlocks(setupRaw).filter((block) => block.type === 'SETUP')
+      if (setupBlocks.length > 0) {
+        blocks = [...blocks, ...setupBlocks]
+      }
+    }
+
+    if (
+      mode === 'onboarding' &&
+      !blocks.some((block) => block.type === 'SETUP' || block.type === 'SETUP_UPDATE')
+    ) {
+      const fallbackSetup = buildFallbackSetup(context)
+      if (fallbackSetup) {
+        blocks = [...blocks, { type: 'SETUP', payload: fallbackSetup }]
+      }
+    }
+
     const applied = await applyAgentBlocks(admin, user.id, blocks)
     const visible = sanitizeAgentContent(raw)
 

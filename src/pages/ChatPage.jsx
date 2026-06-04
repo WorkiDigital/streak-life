@@ -66,7 +66,8 @@ export default function ChatPage({ onboardingMode = false }) {
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
-      if (!sessionData?.session) throw new Error('Sessao expirada. Entre novamente para continuar.')
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) throw new Error('Sessao expirada. Entre novamente para continuar.')
 
       if (clean) {
         setMessages(prev => [
@@ -84,6 +85,9 @@ export default function ChatPage({ onboardingMode = false }) {
 
       // SDK v2 injeta Authorization automaticamente da sessão ativa — não passar header manual
       const { data, error } = await supabase.functions.invoke('agent-chat', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: {
           message: clean,
           source: 'app',

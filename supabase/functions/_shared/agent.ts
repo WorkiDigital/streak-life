@@ -93,12 +93,30 @@ export function getAdminClient() {
   return createClient(url, key)
 }
 
+export async function getAuthUser(authHeader: string) {
+  const url = Deno.env.get('SUPABASE_URL') ?? ''
+  const key = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  if (!url || !key) throw new Error('SUPABASE_URL e SUPABASE_ANON_KEY sao obrigatorios')
+
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim()
+  if (!jwt) return { user: null, error: new Error('Token ausente') }
+
+  const client = createClient(url, key, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await client.auth.getUser(jwt)
+  return { user: data?.user ?? null, error }
+}
+
+/** @deprecated use getAuthUser */
 export function getUserClient(authHeader: string) {
   const url = Deno.env.get('SUPABASE_URL') ?? ''
   const key = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
   if (!url || !key) throw new Error('SUPABASE_URL e SUPABASE_ANON_KEY sao obrigatorios')
   return createClient(url, key, {
     global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
   })
 }
 
@@ -212,14 +230,21 @@ function normalizeReminder(raw: any) {
   const horarios = Array.isArray(raw?.horarios)
     ? raw.horarios.map(cleanTime).filter(Boolean)
     : [cleanTime(raw?.horario)].filter(Boolean)
+  const diasSemana = Array.isArray(raw?.dias_semana)
+    ? raw.dias_semana.map(Number).filter((day: number) => day >= 0 && day <= 6)
+    : [0, 1, 2, 3, 4, 5, 6]
+  const normalizedDays = categoria === 'treino' &&
+    diasSemana.length === 5 &&
+    diasSemana.includes(0) &&
+    !diasSemana.includes(5)
+    ? [1, 2, 3, 4, 5]
+    : diasSemana
 
   return {
     habito: String(raw?.habito || raw?.nome || categoria).trim(),
     categoria,
     horarios: horarios.length ? horarios : ['08:00'],
-    dias_semana: Array.isArray(raw?.dias_semana)
-      ? raw.dias_semana.map(Number).filter((day: number) => day >= 0 && day <= 6)
-      : [0, 1, 2, 3, 4, 5, 6],
+    dias_semana: normalizedDays.length ? normalizedDays : [0, 1, 2, 3, 4, 5, 6],
     canais: Array.isArray(raw?.canais)
       ? raw.canais.filter((canal: string) => ALLOWED_CHANNELS.has(canal))
       : ['push', 'whatsapp'],
