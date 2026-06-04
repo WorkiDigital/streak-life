@@ -12,285 +12,244 @@
           ]
         }
       },
-      "id": "e6f1f4ab-c377-4cf2-8356-8c46fbba3f93",
+      "id": "cron-15min",
       "name": "Cron (15 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [200, 300]
+      "position": [0, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/rest/v1/rpc/get_pending_schedules",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "8f237e81-cf1f-4bb7-b673-f92e5c8e7cf8",
-      "name": "Buscar Hábitos do Horário",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [420, 300]
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "=",
-        "options": {}
-      },
-      "id": "item-lists-split",
-      "name": "Separar em Itens",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [640, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/generate-reminder",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
         "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "id": "buscar-habitos",
+      "name": "Buscar Hábitos Pendentes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "={{ Array.isArray($json) ? $json : [] }}",
+        "options": {}
+      },
+      "id": "split-items",
+      "name": "Separar em Itens",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
           "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Você é um assistente de saúde com tom {{ $json.tom }}. Crie um lembrete curto (máximo 2 frases) e motivador para {{ $json.nome_usuario }} realizar o hábito: {{ $json.nome_habito }}. Seja {{ $json.tom === 'amigavel' ? 'leve e acolhedor' : $json.tom === 'direto' ? 'objetivo e prático' : 'energético e inspirador' }}. Responda apenas com o texto do lembrete, sem aspas.\"\n    }]\n  }]\n}",
+        "options": {}
+      },
+      "id": "gemini-reminder",
+      "name": "Gerar Lembrete (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
             {
-              "name": "userName",
-              "value": "={{ $json.nome_usuario }}"
+              "id": "extract-message",
+              "name": "message",
+              "value": "={{ $json.candidates[0].content.parts[0].text.trim() }}",
+              "type": "string"
             },
             {
-              "name": "habitName",
-              "value": "={{ $json.nome_habito }}"
+              "id": "keep-user",
+              "name": "user_id",
+              "value": "={{ $node['Separar em Itens'].json.user_id }}",
+              "type": "string"
             },
             {
-              "name": "tomPreferido",
-              "value": "={{ $json.tom }}"
+              "id": "keep-habit",
+              "name": "habit_id",
+              "value": "={{ $node['Separar em Itens'].json.habit_id }}",
+              "type": "string"
+            },
+            {
+              "id": "keep-whatsapp",
+              "name": "whatsapp",
+              "value": "={{ $node['Separar em Itens'].json.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "keep-push",
+              "name": "push_token",
+              "value": "={{ $node['Separar em Itens'].json.push_token }}",
+              "type": "string"
+            },
+            {
+              "id": "keep-canais",
+              "name": "canais",
+              "value": "={{ $node['Separar em Itens'].json.canais }}",
+              "type": "array"
+            },
+            {
+              "id": "keep-nome",
+              "name": "nome_habito",
+              "value": "={{ $node['Separar em Itens'].json.nome_habito }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "http-gemini",
-      "name": "Gerar Lembrete (IA)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [860, 300]
+      "id": "extrair-mensagem",
+      "name": "Extrair Mensagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, 300]
     },
     {
       "parameters": {
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json.canais.includes('whatsapp') }}",
-              "value2": "true"
+              "value1": "={{ $json.whatsapp }}",
+              "operation": "isNotEmpty"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}",
+              "value2": true
             }
           ]
-        }
+        },
+        "combineOperation": "all"
       },
       "id": "if-whatsapp",
-      "name": "Verifica WhatsApp",
+      "name": "Tem WhatsApp?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [1080, 200]
+      "typeVersion": 2,
+      "position": [1100, 180]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/send-whatsapp",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "number",
-              "value": "={{ $node['Separar em Itens'].json.whatsapp }}"
-            },
-            {
-              "name": "text",
-              "value": "={{ $json.message }}"
-            }
-          ]
-        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.whatsapp }}\",\n  \"text\": \"🌱 *{{ $json.nome_habito }}*\\n\\n{{ $json.message }}\"\n}",
         "options": {}
       },
-      "id": "send-wpp",
+      "id": "send-whatsapp",
       "name": "Enviar WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1300, 100]
+      "position": [1320, 80]
     },
     {
       "parameters": {
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json.canais.includes('push') }}",
-              "value2": "true"
+              "value1": "={{ $json.push_token }}",
+              "operation": "isNotEmpty"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}",
+              "value2": true
             }
           ]
-        }
+        },
+        "combineOperation": "all"
       },
       "id": "if-push",
-      "name": "Verifica Push",
+      "name": "Tem Push Token?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [1080, 400]
+      "typeVersion": 2,
+      "position": [1100, 420]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/send-push",
+        "url": "={{ $env.PUSH_SERVER_URL }}/send-push",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-api-key", "value": "={{ $env.PUSH_SERVER_SECRET }}" }
           ]
         },
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "userId",
-              "value": "={{ $node['Separar em Itens'].json.user_id }}"
-            },
-            {
-              "name": "title",
-              "value": "Streak Life 🌱"
-            },
-            {
-              "name": "body",
-              "value": "={{ $json.message }}"
-            },
-            {
-              "name": "habitId",
-              "value": "={{ $node['Separar em Itens'].json.habit_id }}"
-            }
-          ]
-        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"subscription\": {{ $json.push_token }},\n  \"title\": \"Streak Life 🌱\",\n  \"body\": \"{{ $json.message }}\",\n  \"habitId\": \"{{ $json.habit_id }}\",\n  \"userId\": \"{{ $json.user_id }}\"\n}",
         "options": {}
       },
       "id": "send-push",
       "name": "Enviar Web Push",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1300, 350]
+      "position": [1320, 380]
     }
   ],
   "connections": {
     "Cron (15 min)": {
-      "main": [
-        [
-          {
-            "node": "Buscar Hábitos do Horário",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Buscar Hábitos Pendentes", "type": "main", "index": 0 }]]
     },
-    "Buscar Hábitos do Horário": {
-      "main": [
-        [
-          {
-            "node": "Separar em Itens",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Buscar Hábitos Pendentes": {
+      "main": [[{ "node": "Separar em Itens", "type": "main", "index": 0 }]]
     },
     "Separar em Itens": {
-      "main": [
-        [
-          {
-            "node": "Gerar Lembrete (IA)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Gerar Lembrete (Gemini)", "type": "main", "index": 0 }]]
     },
-    "Gerar Lembrete (IA)": {
-      "main": [
-        [
-          {
-            "node": "Verifica WhatsApp",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Verifica Push",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Gerar Lembrete (Gemini)": {
+      "main": [[{ "node": "Extrair Mensagem", "type": "main", "index": 0 }]]
     },
-    "Verifica WhatsApp": {
-      "main": [
-        [
-          {
-            "node": "Enviar WhatsApp",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Extrair Mensagem": {
+      "main": [[
+        { "node": "Tem WhatsApp?", "type": "main", "index": 0 },
+        { "node": "Tem Push Token?", "type": "main", "index": 0 }
+      ]]
     },
-    "Verifica Push": {
-      "main": [
-        [
-          {
-            "node": "Enviar Web Push",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Tem WhatsApp?": {
+      "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }], []]
+    },
+    "Tem Push Token?": {
+      "main": [[{ "node": "Enviar Web Push", "type": "main", "index": 0 }], []]
     }
   },
-  "settings": {}
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
