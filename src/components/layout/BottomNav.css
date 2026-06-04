@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--bottom-nav-height);
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0));
   z-index: 50;
   background: hsla(225, 25%, 8%, 0.9);
   backdrop-filter: blur(20px);
@@ -35,6 +35,13 @@
   transition: all var(--transition-fast);
   position: relative;
   min-width: 60px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+  opacity: 0.7;
+  transform: scale(0.94);
 }
 
 .bottom-nav-item:hover {
@@ -72,17 +79,17 @@
 
 .bottom-nav-badge {
   position: absolute;
-  top: -6px;
-  right: -8px;
-  min-width: 16px;
-  height: 16px;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 4px;
   border-radius: var(--radius-full);
   background: var(--color-pending);
   color: hsl(225, 25%, 8%);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: var(--font-weight-bold);
-  line-height: 16px;
+  line-height: 18px;
   text-align: center;
   pointer-events: none;
 }

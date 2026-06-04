@@ -219,6 +219,18 @@ input, select, textarea {
   outline: none;
 }
 
+/* Prevent iOS zoom on focus — must be 16px */
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="time"],
+textarea,
+select {
+  font-size: 16px !important;
+}
+
 ul, ol {
   list-style: none;
 }
@@ -236,7 +248,7 @@ ul, ol {
 .page {
   flex: 1;
   padding-top: var(--header-height);
-  padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0) + var(--space-4));
 }
 
 /* — Typography — */
@@ -294,7 +306,8 @@ ul, ol {
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
+  opacity: 0.82;
 }
 
 .btn-primary {
@@ -334,6 +347,8 @@ ul, ol {
 .btn-icon {
   padding: var(--space-2);
   border-radius: var(--radius-md);
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .btn-lg {
@@ -354,7 +369,7 @@ ul, ol {
 }
 
 .input-label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
@@ -405,6 +420,12 @@ ul, ol {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   min-width: 40px;
+  min-height: 36px;
+}
+
+.chip:active {
+  transform: scale(0.94);
+  opacity: 0.82;
 }
 
 .chip:hover {
@@ -561,8 +582,10 @@ ul, ol {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
   padding: var(--space-6);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0));
   animation: slide-up var(--transition-spring) forwards;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fade-in {
