@@ -1,0 +1,296 @@
+{
+  "name": "Streak Life - Notificações de Hábitos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "e6f1f4ab-c377-4cf2-8356-8c46fbba3f93",
+      "name": "Cron (15 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/rest/v1/rpc/get_pending_schedules",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f237e81-cf1f-4bb7-b673-f92e5c8e7cf8",
+      "name": "Buscar Hábitos do Horário",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=",
+        "options": {}
+      },
+      "id": "item-lists-split",
+      "name": "Separar em Itens",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/generate-reminder",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userName",
+              "value": "={{ $json.nome_usuario }}"
+            },
+            {
+              "name": "habitName",
+              "value": "={{ $json.nome_habito }}"
+            },
+            {
+              "name": "tomPreferido",
+              "value": "={{ $json.tom }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-gemini",
+      "name": "Gerar Lembrete (IA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.canais.includes('whatsapp') }}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "if-whatsapp",
+      "name": "Verifica WhatsApp",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1080, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/send-whatsapp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $node['Separar em Itens'].json.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-wpp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1300, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.canais.includes('push') }}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "if-push",
+      "name": "Verifica Push",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1080, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rldqzqyhqsftwaiyfbwx.supabase.co/functions/v1/send-push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $node['Separar em Itens'].json.user_id }}"
+            },
+            {
+              "name": "title",
+              "value": "Streak Life 🌱"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "habitId",
+              "value": "={{ $node['Separar em Itens'].json.habit_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-push",
+      "name": "Enviar Web Push",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1300, 350]
+    }
+  ],
+  "connections": {
+    "Cron (15 min)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Hábitos do Horário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Hábitos do Horário": {
+      "main": [
+        [
+          {
+            "node": "Separar em Itens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar em Itens": {
+      "main": [
+        [
+          {
+            "node": "Gerar Lembrete (IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Lembrete (IA)": {
+      "main": [
+        [
+          {
+            "node": "Verifica WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Verifica Push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica Push": {
+      "main": [
+        [
+          {
+            "node": "Enviar Web Push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
