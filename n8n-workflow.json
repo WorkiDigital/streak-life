@@ -57,18 +57,6 @@
               "name": "EVOLUTION_API_KEY",
               "value": "={{ $env.EVOLUTION_API_KEY }}",
               "type": "string"
-            },
-            {
-              "id": "env-push-url",
-              "name": "PUSH_SERVER_URL",
-              "value": "={{ $env.PUSH_SERVER_URL }}",
-              "type": "string"
-            },
-            {
-              "id": "env-push-secret",
-              "name": "PUSH_SERVER_SECRET",
-              "value": "={{ $env.PUSH_SERVER_SECRET }}",
-              "type": "string"
             }
           ]
         },
@@ -243,12 +231,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variáveis de Ambiente'].json.PUSH_SERVER_URL }}/send-push",
+        "url": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/send-push",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "x-api-key", "value": "={{ $node['Variáveis de Ambiente'].json.PUSH_SERVER_SECRET }}" }
+            { "name": "Authorization", "value": "=Bearer {{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
