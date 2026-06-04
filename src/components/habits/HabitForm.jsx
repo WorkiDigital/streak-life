@@ -156,8 +156,8 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
       }
       onClose()
     } catch (err) {
-      toast.error(isEditing ? 'Erro ao atualizar hábito.' : 'Erro ao criar hábito.')
-      console.error(err)
+      toast.error(isEditing ? `Erro ao atualizar: ${err.message}` : `Erro ao criar: ${err.message}`)
+      console.error('Submit Error:', err)
     } finally {
       setSaving(false)
     }

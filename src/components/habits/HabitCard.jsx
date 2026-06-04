@@ -30,8 +30,9 @@ export default function HabitCard({ schedule }) {
         setShowExtra(true)
         setTimeout(() => setAnimating(false), 600)
       }
-    } catch {
-      toast.error('Erro ao atualizar hábito')
+    } catch (err) {
+      toast.error(`Erro ao atualizar hábito: ${err.message}`)
+      console.error(err)
     } finally {
       setSaving(false)
     }
@@ -46,8 +47,9 @@ export default function HabitCard({ schedule }) {
         nota: nota.trim() || null,
       })
       toast.success(`${habit?.nome} marcado! ✨`)
-    } catch {
-      toast.error('Erro ao salvar hábito')
+    } catch (err) {
+      toast.error(`Erro ao salvar hábito: ${err.message}`)
+      console.error(err)
     } finally {
       setConfirming(false)
       setShowExtra(false)

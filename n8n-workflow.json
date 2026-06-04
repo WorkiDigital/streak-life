@@ -16,7 +16,10 @@
       "name": "Cron (15 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [0, 300]
+      "position": [
+        0,
+        300
+      ]
     },
     {
       "parameters": {
@@ -32,12 +35,6 @@
               "id": "env-supabase-key",
               "name": "SUPABASE_SERVICE_KEY",
               "value": "={{ $env.SUPABASE_SERVICE_KEY }}",
-              "type": "string"
-            },
-            {
-              "id": "env-gemini",
-              "name": "GEMINI_API_KEY",
-              "value": "={{ $env.GEMINI_API_KEY }}",
               "type": "string"
             },
             {
@@ -63,32 +60,49 @@
         "options": {}
       },
       "id": "edit-fields-env",
-      "name": "Variáveis de Ambiente",
+      "name": "Variaveis de Ambiente",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [220, 300]
+      "position": [
+        220,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
-        "bodyParameters": { "parameters": [] },
+        "bodyParameters": {
+          "parameters": []
+        },
         "options": {}
       },
       "id": "buscar-habitos",
       "name": "Buscar Hábitos Pendentes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [440, 300]
+      "position": [
+        440,
+        300
+      ]
     },
     {
       "parameters": {
@@ -99,28 +113,45 @@
       "name": "Separar em Itens",
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 2,
-      "position": [660, 300]
+      "position": [
+        660,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $node['Variáveis de Ambiente'].json.GEMINI_API_KEY }}",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/generate-reminder",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Você é um assistente de saúde. Crie um lembrete curto (máximo 2 frases) e motivador para {{ $json.nome_usuario }} realizar o hábito: {{ $json.nome_habito }}. Tom: {{ $json.tom === 'amigavel' ? 'leve e acolhedor' : $json.tom === 'direto' ? 'objetivo e prático' : 'energético e inspirador' }}. Responda apenas com o texto do lembrete, sem aspas.\"\n    }]\n  }]\n}",
+        "jsonBody": "={\n  \"userId\": \"{{ $json.user_id }}\",\n  \"userName\": \"{{ $json.nome_usuario }}\",\n  \"habitName\": \"{{ $json.nome_habito }}\",\n  \"category\": \"{{ $json.categoria }}\",\n  \"tomPreferido\": \"{{ $json.tom }}\"\n}",
         "options": {}
       },
       "id": "gemini-reminder",
-      "name": "Gerar Lembrete (Gemini)",
+      "name": "Gerar Lembrete (IA Unica)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [880, 300]
+      "position": [
+        880,
+        300
+      ]
     },
     {
       "parameters": {
@@ -129,7 +160,7 @@
             {
               "id": "msg",
               "name": "message",
-              "value": "={{ $json.candidates[0].content.parts[0].text.trim() }}",
+              "value": "={{ $json.message }}",
               "type": "string"
             },
             {
@@ -167,6 +198,36 @@
               "name": "nome_habito",
               "value": "={{ $node['Separar em Itens'].json.nome_habito }}",
               "type": "string"
+            },
+            {
+              "id": "sid",
+              "name": "schedule_id",
+              "value": "={{ $node['Separar em Itens'].json.schedule_id }}",
+              "type": "string"
+            },
+            {
+              "id": "snz",
+              "name": "snooze_id",
+              "value": "={{ $node['Separar em Itens'].json.snooze_id }}",
+              "type": "string"
+            },
+            {
+              "id": "dt",
+              "name": "data",
+              "value": "={{ $node['Separar em Itens'].json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "src",
+              "name": "source",
+              "value": "={{ $node['Separar em Itens'].json.source }}",
+              "type": "string"
+            },
+            {
+              "id": "cat",
+              "name": "categoria",
+              "value": "={{ $node['Separar em Itens'].json.categoria }}",
+              "type": "string"
             }
           ]
         },
@@ -176,13 +237,26 @@
       "name": "Extrair Mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1100, 300]
+      "position": [
+        1100,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [{ "value1": "={{ $json.whatsapp }}", "operation": "isNotEmpty" }],
-          "boolean": [{ "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}", "value2": true }]
+          "string": [
+            {
+              "value1": "={{ $json.whatsapp }}",
+              "operation": "isNotEmpty"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}",
+              "value2": true
+            }
+          ]
         },
         "combineOperation": "all"
       },
@@ -190,17 +264,26 @@
       "name": "Tem WhatsApp?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1320, 180]
+      "position": [
+        1320,
+        180
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variáveis de Ambiente'].json.EVOLUTION_URL }}/message/sendText/{{ $node['Variáveis de Ambiente'].json.EVOLUTION_INSTANCE }}",
+        "url": "={{ $node['Variaveis de Ambiente'].json.EVOLUTION_URL }}/message/sendText/{{ $node['Variaveis de Ambiente'].json.EVOLUTION_INSTANCE }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $node['Variáveis de Ambiente'].json.EVOLUTION_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.EVOLUTION_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -212,13 +295,26 @@
       "name": "Enviar WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1540, 80]
+      "position": [
+        1540,
+        80
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [{ "value1": "={{ $json.push_token }}", "operation": "isNotEmpty" }],
-          "boolean": [{ "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}", "value2": true }]
+          "string": [
+            {
+              "value1": "={{ $json.push_token }}",
+              "operation": "isNotEmpty"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}",
+              "value2": true
+            }
+          ]
         },
         "combineOperation": "all"
       },
@@ -226,58 +322,330 @@
       "name": "Tem Push Token?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1320, 420]
+      "position": [
+        1320,
+        420
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variáveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/send-push",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/send-push",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $node['Variáveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"subscription\": {{ $json.push_token }},\n  \"title\": \"Streak Life 🌱\",\n  \"body\": \"{{ $json.message }}\",\n  \"habitId\": \"{{ $json.habit_id }}\",\n  \"userId\": \"{{ $json.user_id }}\"\n}",
+        "jsonBody": "={\n  \"subscription\": {{ $json.push_token }},\n  \"payload\": {\n    \"title\": \"Streak Life\",\n    \"body\": \"{{ $json.message }}\",\n    \"data\": {\n      \"url\": \"/\",\n      \"habitId\": \"{{ $json.habit_id }}\",\n      \"userId\": \"{{ $json.user_id }}\",\n      \"date\": \"{{ $json.data }}\"\n    }\n  }\n}",
         "options": {}
       },
       "id": "send-push",
       "name": "Enviar Web Push",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1540, 380]
+      "position": [
+        1540,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminders_sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=ignore-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"schedule_id\": {{ $node['Extrair Mensagem'].json.schedule_id ? \"\\\"\" + $node['Extrair Mensagem'].json.schedule_id + \"\\\"\" : null }},\n  \"user_id\": \"{{ $node['Extrair Mensagem'].json.user_id }}\",\n  \"data\": \"{{ $node['Extrair Mensagem'].json.data }}\",\n  \"canal\": \"whatsapp\",\n  \"mensagem\": \"{{ $node['Extrair Mensagem'].json.message }}\"\n}",
+        "options": {}
+      },
+      "id": "log-whatsapp-sent",
+      "name": "Registrar WhatsApp Enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1760,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminders_sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=ignore-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"schedule_id\": {{ $node['Extrair Mensagem'].json.schedule_id ? \"\\\"\" + $node['Extrair Mensagem'].json.schedule_id + \"\\\"\" : null }},\n  \"user_id\": \"{{ $node['Extrair Mensagem'].json.user_id }}\",\n  \"data\": \"{{ $node['Extrair Mensagem'].json.data }}\",\n  \"canal\": \"push\",\n  \"mensagem\": \"{{ $node['Extrair Mensagem'].json.message }}\"\n}",
+        "options": {}
+      },
+      "id": "log-push-sent",
+      "name": "Registrar Push Enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1760,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $node['Extrair Mensagem'].json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"delivered_at\": \"{{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "id": "mark-whatsapp-snooze-delivered",
+      "name": "Marcar Adiamento WhatsApp Entregue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1980,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $node['Extrair Mensagem'].json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"delivered_at\": \"{{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "id": "mark-push-snooze-delivered",
+      "name": "Marcar Adiamento Push Entregue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1980,
+        380
+      ]
     }
   ],
   "connections": {
     "Cron (15 min)": {
-      "main": [[{ "node": "Variáveis de Ambiente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Variaveis de Ambiente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Variáveis de Ambiente": {
-      "main": [[{ "node": "Buscar Hábitos Pendentes", "type": "main", "index": 0 }]]
+    "Variaveis de Ambiente": {
+      "main": [
+        [
+          {
+            "node": "Buscar Hábitos Pendentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Hábitos Pendentes": {
-      "main": [[{ "node": "Separar em Itens", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Separar em Itens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Separar em Itens": {
-      "main": [[{ "node": "Gerar Lembrete (Gemini)", "type": "main", "index": 0 }]]
-    },
-    "Gerar Lembrete (Gemini)": {
-      "main": [[{ "node": "Extrair Mensagem", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Gerar Lembrete (IA Unica)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extrair Mensagem": {
-      "main": [[
-        { "node": "Tem WhatsApp?", "type": "main", "index": 0 },
-        { "node": "Tem Push Token?", "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "Tem WhatsApp?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tem Push Token?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tem WhatsApp?": {
-      "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }], []]
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
     },
     "Tem Push Token?": {
-      "main": [[{ "node": "Enviar Web Push", "type": "main", "index": 0 }], []]
+      "main": [
+        [
+          {
+            "node": "Enviar Web Push",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gerar Lembrete (IA Unica)": {
+      "main": [
+        [
+          {
+            "node": "Extrair Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar WhatsApp Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar WhatsApp Enviado": {
+      "main": [
+        [
+          {
+            "node": "Marcar Adiamento WhatsApp Entregue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Web Push": {
+      "main": [
+        [
+          {
+            "node": "Registrar Push Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Push Enviado": {
+      "main": [
+        [
+          {
+            "node": "Marcar Adiamento Push Entregue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {

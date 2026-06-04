@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage'
 import OnboardingPage from './pages/OnboardingPage'
 import DashboardPage from './pages/DashboardPage'
 import HabitsPage from './pages/HabitsPage'
+import ChatPage from './pages/ChatPage'
 import ProgressPage from './pages/ProgressPage'
 import SettingsPage from './pages/SettingsPage'
 
@@ -41,6 +42,7 @@ export default function App() {
               >
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/habits" element={<HabitsPage />} />
+                <Route path="/chat" element={<ChatPage />} />
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

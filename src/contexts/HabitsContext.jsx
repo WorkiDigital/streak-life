@@ -199,6 +199,13 @@ export function HabitsProvider({ children }) {
 
     const dateStr = format(date, 'yyyy-MM-dd')
 
+    // Optimistic update
+    setLogs(prev => prev.map(l =>
+      (l.habit_id === habitId && l.data === dateStr)
+        ? { ...l, status: 'pendente', marcado_em: null }
+        : l
+    ))
+
     const { error } = await supabase
       .from('habit_logs')
       .update({ status: 'pendente', marcado_em: null })
@@ -208,6 +215,7 @@ export function HabitsProvider({ children }) {
 
     if (error) {
       console.error('Error undoing mark:', error)
+      fetchLogs() // Revert local state on error
       throw error
     }
   }

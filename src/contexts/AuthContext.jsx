@@ -139,6 +139,13 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  async function refreshProfile() {
+    if (!user) return null
+    const data = await fetchProfile(user.id)
+    setProfile(data)
+    return data
+  }
+
   const value = {
     user,
     profile,
@@ -147,7 +154,8 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     updateProfile,
-    isOnboarded: profile?.whatsapp && profile?.nome,
+    refreshProfile,
+    isOnboarded: Boolean(profile?.onboarding_completed || (profile?.whatsapp && profile?.nome)),
   }
 
   return (
