@@ -1,0 +1,217 @@
+.progress-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.progress-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.period-selector {
+  display: flex;
+  gap: var(--space-1);
+}
+
+/* Weekly chart */
+.progress-weekly {
+  padding: var(--space-4);
+}
+
+.weekly-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.weekly-svg {
+  width: 100%;
+  height: 80px;
+  display: block;
+}
+
+.weekly-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.weekly-label {
+  text-align: center;
+  flex: 1;
+}
+
+/* Category filter scroll */
+.progress-filter-scroll {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.progress-filter-scroll::-webkit-scrollbar { display: none; }
+
+/* Stats */
+.progress-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.progress-stat-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.progress-stat-value {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1;
+}
+
+.progress-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.progress-stat-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+}
+
+.progress-stat-value-sm {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Heatmap card */
+.progress-heatmap {
+  padding: var(--space-4);
+}
+
+/* Per-habit adherence */
+.progress-per-habit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.habit-adherence-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.habit-adherence-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.habit-adherence-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.habit-adherence-icon {
+  font-size: 1rem;
+}
+
+.habit-adherence-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.habit-adherence-bar-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.habit-adherence-bar-area .progress-bar {
+  flex: 1;
+}
+
+.habit-adherence-pct {
+  min-width: 32px;
+  text-align: right;
+}
+
+.habit-adherence-detail-hint {
+  margin-left: auto;
+}
+
+.progress-empty-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+/* Habit detail drawer */
+.habit-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.habit-detail-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.habit-detail-header h2 {
+  flex: 1;
+}
+
+.habit-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.habit-detail-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+}
+
+.habit-detail-stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1;
+}
+
+.habit-detail-heatmap {
+  padding: var(--space-4);
+  overflow: hidden;
+}

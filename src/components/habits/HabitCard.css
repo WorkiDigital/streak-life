@@ -1,0 +1,122 @@
+.habit-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  gap: var(--space-3);
+  transition: all var(--transition-normal);
+}
+
+.habit-card.done {
+  border-color: hsla(142, 71%, 45%, 0.3);
+  background: hsla(142, 71%, 45%, 0.08);
+}
+
+.habit-card.missed {
+  border-color: hsla(0, 72%, 55%, 0.2);
+  opacity: 0.7;
+}
+
+.habit-card.animate-burst {
+  animation: confetti-burst 0.5s ease-out;
+}
+
+.habit-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-card-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.habit-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.habit-card-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.habit-card-time {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.habit-card-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.habit-card-btn:active {
+  transform: scale(0.95);
+}
+
+.btn-pending {
+  background: var(--color-done-subtle);
+  color: var(--color-done);
+  border: 1px solid hsla(142, 71%, 45%, 0.3);
+}
+
+.btn-pending:hover {
+  background: hsla(142, 71%, 45%, 0.25);
+  box-shadow: var(--shadow-glow-green);
+}
+
+.btn-done {
+  background: var(--color-done);
+  color: var(--color-text-inverse);
+}
+
+.btn-done:hover {
+  opacity: 0.9;
+}
+
+.habit-card.done .habit-card-name {
+  color: var(--color-done);
+}
+
+.habit-card-valor {
+  font-style: italic;
+}
+
+/* Mini-modal extra (valor/nota) */
+.habit-extra-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-color: hsla(142, 71%, 45%, 0.3);
+  animation: slide-up var(--transition-spring) forwards;
+}
+
+.habit-extra-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.spin {
+  animation: card-spin 0.8s linear infinite;
+}
+@keyframes card-spin { to { transform: rotate(360deg); } }
