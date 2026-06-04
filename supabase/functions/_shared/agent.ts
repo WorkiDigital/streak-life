@@ -101,12 +101,21 @@ export async function getAuthUser(authHeader: string) {
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!jwt) return { user: null, error: new Error('Token ausente') }
 
-  const client = createClient(url, key, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
+  // Valida o JWT diretamente via REST — mais confiável que o SDK no Deno
+  const res = await fetch(`${url}/auth/v1/user`, {
+    headers: {
+      'apikey': key,
+      'Authorization': `Bearer ${jwt}`,
+    },
   })
-  const { data, error } = await client.auth.getUser(jwt)
-  return { user: data?.user ?? null, error }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    return { user: null, error: new Error(`Auth failed: ${res.status} ${body}`) }
+  }
+
+  const user = await res.json()
+  return { user, error: null }
 }
 
 /** @deprecated use getAuthUser */

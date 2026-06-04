@@ -8,7 +8,7 @@
 }
 
 .chat-page {
-  min-height: calc(100dvh - var(--header-height) - var(--bottom-nav-height));
+  min-height: calc(100dvh - var(--app-header-height) - var(--bottom-nav-height));
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: var(--space-4);

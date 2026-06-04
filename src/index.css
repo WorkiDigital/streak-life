@@ -123,6 +123,8 @@
   --max-width: 480px;
   --bottom-nav-height: 72px;
   --header-height: 64px;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --app-header-height: calc(var(--header-height) + var(--safe-area-top));
 }
 
 /* ---- Light Theme ---- */
@@ -247,7 +249,7 @@ ul, ol {
 
 .page {
   flex: 1;
-  padding-top: var(--header-height);
+  padding-top: var(--app-header-height);
   padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0) + var(--space-4));
 }
 
