@@ -5,21 +5,20 @@ import { useToast } from '../contexts/ToastContext'
 import HabitForm from '../components/habits/HabitForm'
 import './HabitsPage.css'
 
-const CATEGORY_FILTERS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'hidratacao', label: '💧 Hidratação' },
-  { value: 'treino', label: '🏋️ Treino' },
-  { value: 'alimentacao', label: '🍽️ Alimentação' },
-  { value: 'meditacao', label: '🧘‍♀️ Meditação' },
-  { value: 'leitura', label: '📚 Leitura' },
-  { value: 'medicamento', label: '💊 Medicamento' },
-  { value: 'ar_livre', label: '☀️ Ar Livre' },
-  { value: 'autocuidado', label: '💆‍♀️ Autocuidado' },
-  { value: 'alongamento', label: '🤸 Alongamento' },
-  { value: 'tela', label: '👀 Telas' },
-  { value: 'sono', label: '🌙 Sono' },
-  { value: 'outro', label: '📋 Outro' },
-]
+const CATEGORY_META = {
+  hidratacao:  '💧 Hidratação',
+  treino:      '🏋️ Treino',
+  alimentacao: '🍽️ Alimentação',
+  meditacao:   '🧘 Meditação',
+  leitura:     '📚 Leitura',
+  medicamento: '💊 Medicamento',
+  ar_livre:    '☀️ Ar Livre',
+  autocuidado: '💆 Autocuidado',
+  alongamento: '🤸 Alongamento',
+  tela:        '👀 Telas',
+  sono:        '🌙 Sono',
+  outro:       '📋 Outro',
+}
 
 export default function HabitsPage() {
   const [showForm, setShowForm] = useState(false)
@@ -31,6 +30,17 @@ export default function HabitsPage() {
   const toast = useToast()
 
   const DAYS_LABEL = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+
+  // Build filter list from categories that actually exist in user's habits
+  const categoryFilters = useMemo(() => {
+    const seen = new Set(schedules.map(s => s.habits?.categoria).filter(Boolean))
+    return [
+      { value: 'all', label: 'Todos' },
+      ...Object.entries(CATEGORY_META)
+        .filter(([key]) => seen.has(key))
+        .map(([key, label]) => ({ value: key, label })),
+    ]
+  }, [schedules])
 
   // Group schedules by habit_id so multi-horario habits appear as 1 card
   const groupedHabits = useMemo(() => {
@@ -77,7 +87,7 @@ export default function HabitsPage() {
 
         {/* Category filter */}
         <div className="habits-filter-scroll">
-          {CATEGORY_FILTERS.map(f => (
+          {categoryFilters.map(f => (
             <button
               key={f.value}
               className={`chip ${categoryFilter === f.value ? 'active' : ''}`}
