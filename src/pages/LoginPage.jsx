@@ -20,9 +20,23 @@ export default function LoginPage() {
   const from = location.state?.from?.pathname || '/'
   const emailVerified = new URLSearchParams(location.search).get('verified') === '1'
 
+  function isStrongPassword(value) {
+    const hasMinLength = value.length >= 8
+    const hasUppercase = /[A-ZÀ-Ý]/.test(value)
+    const hasSpecialChar = /[^A-Za-zÀ-ÿ0-9]/.test(value)
+
+    return hasMinLength && hasUppercase && hasSpecialChar
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+
+    if (isSignUp && !isStrongPassword(password)) {
+      setError('A senha precisa ter no mínimo 8 caracteres, uma letra maiúscula e um caractere especial.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -37,7 +51,7 @@ export default function LoginPage() {
       const messages = {
         'Invalid login credentials': 'Email ou senha incorretos.',
         'User already registered': 'Este email ja esta cadastrado.',
-        'Password should be at least 6 characters': 'A senha precisa ter no mínimo 6 caracteres.',
+        'Password should be at least 6 characters': 'A senha precisa ter no mínimo 8 caracteres, uma letra maiúscula e um caractere especial.',
         'Unable to validate email address: invalid format': 'Formato de email inválido.',
       }
       setError(messages[err.message] || err.message || 'Erro ao autenticar. Tente novamente.')
@@ -138,11 +152,11 @@ export default function LoginPage() {
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   className={`input input-padded ${error ? 'input-error' : ''}`}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={isSignUp ? 'Mínimo 8 caracteres, maiúscula e especial' : 'Sua senha'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={isSignUp ? 8 : 1}
                   autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 />
                 <button
