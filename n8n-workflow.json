@@ -346,7 +346,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"subscription\": {{ $json.push_token }},\n  \"payload\": {\n    \"title\": \"Streak Life\",\n    \"body\": \"{{ $json.message }}\",\n    \"data\": {\n      \"url\": \"/\",\n      \"habitId\": \"{{ $json.habit_id }}\",\n      \"userId\": \"{{ $json.user_id }}\",\n      \"date\": \"{{ $json.data }}\"\n    }\n  }\n}",
+        "jsonBody": "={{ JSON.stringify({\n  subscription: typeof $json.push_token === 'string' ? JSON.parse($json.push_token) : $json.push_token,\n  payload: {\n    title: 'Streak Life',\n    body: $json.message,\n    data: {\n      url: '/',\n      habitId: $json.habit_id,\n      userId: $json.user_id,\n      date: $json.data\n    }\n  }\n}) }}",
         "options": {}
       },
       "id": "send-push",

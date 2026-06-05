@@ -30,8 +30,14 @@ serve(async (req: Request) => {
     }
 
     const authHeader = req.headers.get('Authorization') ?? ''
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const isServiceRole = authHeader === `Bearer ${serviceKey}`
+    const serviceKeys = [
+      Deno.env.get('N8N_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    ]
+
+    const cleanAuthToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+    const cleanServiceKeys = serviceKeys.map((key) => key.trim()).filter(Boolean)
+    const isServiceRole = cleanServiceKeys.includes(cleanAuthToken)
 
     // Validate caller: either service role (n8n) or authenticated user
     let callerUserId: string | null = null
