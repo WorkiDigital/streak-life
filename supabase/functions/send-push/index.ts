@@ -91,7 +91,7 @@ serve(async (req: Request) => {
   } catch (err: any) {
     console.error('[send-push] Erro:', err)
     if (err?.statusCode === 410 || err?.statusCode === 404) {
-      return jsonResponse({ error: 'subscription_expired' }, 410)
+      return jsonResponse({ success: false, reason: 'subscription_expired' }, 200)
     }
     return jsonResponse({ error: err?.message ?? String(err) }, 500)
   }
