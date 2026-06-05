@@ -50,6 +50,33 @@ function timesEveryTwoHours(start = '08:00', end = '18:00') {
   return times.length ? times : ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00']
 }
 
+function inferGoal(text: string) {
+  if (/emagrec|perder peso|perder gordura|baixar peso|secar/.test(text)) return 'emagrecer'
+  if (/ganhar massa|hipertrof|massa muscular|ganhar peso/.test(text)) return 'ganhar_massa'
+  if (/manter peso|manutencao|manter/.test(text)) return 'manter'
+  if (/performance|rendimento|desempenho/.test(text)) return 'performance'
+  if (/saude|habito|qualidade de vida|disposicao/.test(text)) return 'saude'
+  return 'saude'
+}
+
+function inferGoalDescription(text: string, pesoKg: number | null, pesoMetaKg: number | null) {
+  const objetivo = inferGoal(text)
+  if (objetivo === 'emagrecer' && pesoKg && pesoMetaKg) {
+    return `Reduzir de ${pesoKg} kg para ${pesoMetaKg} kg com saude e consistencia`
+  }
+  if (objetivo === 'ganhar_massa') return 'Ganhar massa muscular com rotina sustentavel'
+  if (objetivo === 'performance') return 'Melhorar desempenho mantendo rotina de saude'
+  if (objetivo === 'manter') return 'Manter peso e consolidar bons habitos'
+  return 'Melhorar saude e consistencia nos habitos'
+}
+
+function inferStressLevel(text: string) {
+  if (/estresse alto|muito estress|ansios|exaust/.test(text)) return 'alto'
+  if (/estresse baixo|pouco estress|tranquil/.test(text)) return 'baixo'
+  if (/estress/.test(text)) return 'medio'
+  return null
+}
+
 function hasAffirmedRisk(text: string) {
   const risks = ['compuls', 'purga', 'laxante', 'diuretic', 'jejum extremo', 'culpa intensa', 'vomit', 'restricao severa']
   return risks.some((risk) => {
@@ -115,6 +142,17 @@ function buildFallbackSetup(context: any) {
       treina: /trein|musculacao|academia|corrida/.test(allText),
       dias_treino: dias_treino ?? null,
       tipo_treino,
+      objetivo: inferGoal(allText),
+      objetivo_descricao: inferGoalDescription(allText, peso_kg, peso_meta_kg),
+      prazo_meta: allText.match(/(\d+\s*(?:semanas?|meses?|anos?))/)?.[1] ?? null,
+      horario_acordar: wake,
+      horario_dormir: sleep,
+      horario_treino_preferido: treinoHora,
+      preferencias_alimentares: /simples|pratic/.test(allText) ? 'comidas simples e praticas' : null,
+      restricoes_alimentares: /sem restri|nenhuma restri/.test(allText) ? 'nenhuma informada' : null,
+      observacoes_saude: 'Triagem inicial sem sinais de risco informados',
+      nivel_estresse: inferStressLevel(allText),
+      horarios_refeicoes: { jantar: jantarHora },
       timezone: context.profile?.timezone ?? 'America/Fortaleza',
       tom_preferido: context.profile?.tom_preferido ?? 'amigavel',
     },
@@ -237,7 +275,7 @@ Se houver dados suficientes de perfil, objetivo, rotina, horarios, treino e tria
 Se faltar alguma informacao essencial ou houver sinal de risco, responda somente NEED_MORE.
 
 Regras do SETUP:
-- Inclua perfil com idade, sexo, altura_cm, peso_kg, peso_meta_kg, nivel_atividade, treina, dias_treino, tipo_treino, timezone e tom_preferido quando disponiveis.
+- Inclua perfil com idade, sexo, altura_cm, peso_kg, peso_meta_kg, nivel_atividade, treina, dias_treino, tipo_treino, objetivo, objetivo_descricao, prazo_meta, horario_acordar, horario_dormir, horario_treino_preferido, preferencias_alimentares, restricoes_alimentares, observacoes_saude, nivel_estresse, horarios_refeicoes, timezone e tom_preferido quando disponiveis.
 - Inclua lembretes praticos para hidratacao, treino, alimentacao/jantar, tela e sono quando fizerem sentido.
 - Use horarios no formato HH:mm.
 - Use dias_semana 0 a 6.

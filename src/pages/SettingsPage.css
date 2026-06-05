@@ -5,6 +5,45 @@
   padding-top: var(--space-4);
 }
 
+.settings-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.settings-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.settings-summary-item {
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.settings-summary-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
+.settings-summary-item strong {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
 .settings-section {
   display: flex;
   flex-direction: column;
@@ -29,10 +68,33 @@
   padding: var(--space-4);
 }
 
-.settings-tom-options {
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.settings-field-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-chip-options {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+.settings-textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: var(--line-height-normal);
+}
+
+.settings-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
 }
 
 .settings-divider {
@@ -59,6 +121,12 @@
 .settings-row-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.settings-health-note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
 }
 
 .settings-toggle {
@@ -113,3 +181,15 @@
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 420px) {
+  .settings-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-summary,
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
