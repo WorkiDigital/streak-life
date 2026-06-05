@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { X, Loader2, Clock, Repeat } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -99,14 +99,25 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
 
   // Schedule mode
   const [schedMode, setSchedMode] = useState(detected.mode)
-
-  // Fixo
   const [horario, setHorario] = useState(detected.horario || '08:00')
+  const [inicio, setInicio] = useState(detected.inicio || (profile?.horario_acordar?.slice(0,5) ?? '06:00'))
+  const [fim, setFim] = useState(detected.fim || (profile?.horario_dormir?.slice(0,5) ?? '21:00'))
+  const [intervalMinutes, setIntervalMinutes] = useState(detected.intervalMinutes || 120)
 
-  // Intervalo
-  const [inicio, setInicio] = useState(detected.inicio || '06:00')
-  const [fim, setFim] = useState(detected.fim || '21:00')
-  const [intervalMinutes, setIntervalMinutes] = useState(detected.intervalMinutes || 60)
+  // Quando schedules carrega de forma assíncrona (edição), re-sincroniza os valores detectados
+  useEffect(() => {
+    if (!isEditing || existingHorarios.length === 0) return
+    const d = detectExistingMode(existingHorarios)
+    setSchedMode(d.mode)
+    if (d.mode === 'fixo') {
+      setHorario(d.horario || '08:00')
+    } else {
+      setInicio(d.inicio)
+      setFim(d.fim)
+      setIntervalMinutes(d.intervalMinutes)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingHorarios.join(',')])
 
   const toast = useToast()
   const selectedCategory = CATEGORIES.find(c => c.value === categoria)
