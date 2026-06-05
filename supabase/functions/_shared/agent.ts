@@ -130,12 +130,12 @@ export function getUserClient(authHeader: string) {
 }
 
 export function sanitizeAgentContent(content: string) {
-  return content.replace(/<!--(?:SETUP|SETUP_UPDATE|ACTION):[\s\S]*?-->/g, '').trim()
+  return content.replace(/<!--\s*(?:SETUP|SETUP_UPDATE|ACTION)\s*:[\s\S]*?\s*-->/g, '').trim()
 }
 
 export function parseAgentBlocks(content: string) {
   const blocks: Array<{ type: 'SETUP' | 'SETUP_UPDATE' | 'ACTION'; payload: any }> = []
-  const regex = /<!--(SETUP|SETUP_UPDATE|ACTION):([\s\S]*?)-->/g
+  const regex = /<!--\s*(SETUP|SETUP_UPDATE|ACTION)\s*:\s*([\s\S]*?)\s*-->/g
   let match: RegExpExecArray | null
 
   while ((match = regex.exec(content)) !== null) {

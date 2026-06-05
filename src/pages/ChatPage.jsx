@@ -7,6 +7,25 @@ import { useHabits } from '../contexts/HabitsContext'
 import { useToast } from '../contexts/ToastContext'
 import './ChatPage.css'
 
+function isTempMessage(message) {
+  return String(message?.id || '').startsWith('temp-')
+}
+
+function mergeMessageList(current, incoming, { dropTemps = false } = {}) {
+  const byId = new Map()
+  const base = dropTemps ? current.filter(message => !isTempMessage(message)) : current
+
+  for (const message of base) {
+    if (message?.id) byId.set(String(message.id), message)
+  }
+
+  for (const message of incoming) {
+    if (message?.id) byId.set(String(message.id), message)
+  }
+
+  return Array.from(byId.values())
+}
+
 export default function ChatPage({ onboardingMode = false }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -43,7 +62,7 @@ export default function ChatPage({ onboardingMode = false }) {
       toast.error('Erro ao carregar conversa')
       console.error(error)
     } else {
-      setMessages(data || [])
+      setMessages(prev => showLoading ? (data || []) : mergeMessageList(prev, data || [], { dropTemps: true }))
     }
     if (showLoading) setLoading(false)
   }
@@ -70,8 +89,7 @@ export default function ChatPage({ onboardingMode = false }) {
       if (!accessToken) throw new Error('Sessao expirada. Entre novamente para continuar.')
 
       if (clean) {
-        setMessages(prev => [
-          ...prev,
+        setMessages(prev => mergeMessageList(prev, [
           {
             id: `temp-${Date.now()}`,
             user_id: user.id,
@@ -80,10 +98,9 @@ export default function ChatPage({ onboardingMode = false }) {
             source: 'app',
             created_at: new Date().toISOString(),
           },
-        ])
+        ]))
       }
 
-      // SDK v2 injeta Authorization automaticamente da sessão ativa — não passar header manual
       const { data, error } = await supabase.functions.invoke('agent-chat', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -97,10 +114,7 @@ export default function ChatPage({ onboardingMode = false }) {
 
       if (error) throw error
       if (data?.assistantMessage) {
-        setMessages(prev => [
-          ...prev.filter(item => !String(item.id).startsWith('temp-')),
-          data.assistantMessage,
-        ])
+        setMessages(prev => mergeMessageList(prev, [data.assistantMessage], { dropTemps: true }))
       }
 
       setInput('')
@@ -109,7 +123,7 @@ export default function ChatPage({ onboardingMode = false }) {
     } catch (error) {
       toast.error(error.message || 'Erro ao falar com a IA')
       console.error(error)
-      setMessages(prev => prev.filter(item => !String(item.id).startsWith('temp-')))
+      setMessages(prev => prev.filter(item => !isTempMessage(item)))
     } finally {
       setSending(false)
       bootstrapped.current = true
@@ -151,10 +165,7 @@ export default function ChatPage({ onboardingMode = false }) {
         },
         payload => {
           if (payload.eventType === 'INSERT') {
-            setMessages(prev => {
-              if (prev.some(item => item.id === payload.new.id)) return prev
-              return [...prev.filter(item => !String(item.id).startsWith('temp-')), payload.new]
-            })
+            setMessages(prev => mergeMessageList(prev, [payload.new], { dropTemps: true }))
           }
         }
       )

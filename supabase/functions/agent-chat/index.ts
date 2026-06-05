@@ -158,6 +158,30 @@ function buildFallbackSetup(context: any) {
   }
 }
 
+function buildSetupCompletionMessage() {
+  return [
+    'Pronto, montei seu plano inicial e configurei seus lembretes.',
+    '',
+    'Eu deixei os horarios distribuidos de um jeito pratico para sua rotina. Voce pode me pedir para mudar qualquer coisa, tipo "muda treino para 18h" ou "adiar agua por 30 minutos".',
+  ].join('\n')
+}
+
+function buildEmptyVisibleFallback(blocks: Array<{ type: string; payload: any }>) {
+  if (blocks.some((block) => block.type === 'SETUP')) {
+    return buildSetupCompletionMessage()
+  }
+
+  if (blocks.some((block) => block.type === 'SETUP_UPDATE')) {
+    return 'Feito, atualizei seu plano.'
+  }
+
+  const action = blocks.find((block) => block.type === 'ACTION')?.payload
+  if (action?.tipo === 'marcar_feito') return 'Feito, registrei aqui.'
+  if (action?.tipo === 'adiar') return 'Combinado, adiei esse lembrete.'
+
+  return 'Certo, continue me contando.'
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
@@ -201,6 +225,7 @@ Nao faca perguntas extras quando ja for possivel configurar horarios seguros e p
 
     const raw = await callGemini(SYSTEM_PROMPT, aiInput)
     let blocks = parseAgentBlocks(raw)
+    let setupGeneratedInternally = false
 
     if (
       mode === 'onboarding' &&
@@ -228,6 +253,7 @@ Regras do SETUP:
       const setupBlocks = parseAgentBlocks(setupRaw).filter((block) => block.type === 'SETUP')
       if (setupBlocks.length > 0) {
         blocks = [...blocks, ...setupBlocks]
+        setupGeneratedInternally = true
       }
     }
 
@@ -238,11 +264,16 @@ Regras do SETUP:
       const fallbackSetup = buildFallbackSetup(context)
       if (fallbackSetup) {
         blocks = [...blocks, { type: 'SETUP', payload: fallbackSetup }]
+        setupGeneratedInternally = true
       }
     }
 
     const applied = await applyAgentBlocks(admin, user.id, blocks)
-    const visible = sanitizeAgentContent(raw)
+    let visible = sanitizeAgentContent(raw)
+    const completedSetup = applied.some((item: any) => item.type === 'SETUP')
+    if ((setupGeneratedInternally && completedSetup) || !visible) {
+      visible = buildEmptyVisibleFallback(blocks)
+    }
 
     const { data: assistantMessage, error: insertError } = await admin
       .from('chat_messages')
