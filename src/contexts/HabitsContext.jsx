@@ -473,13 +473,14 @@ export function HabitsProvider({ children }) {
   async function deleteHabit(habitId) {
     if (!user) return
 
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('habits')
-      .update({ ativo: false })
+      .update({ ativo: false }, { count: 'exact' })
       .eq('id', habitId)
       .eq('user_id', user.id)
 
     if (error) throw error
+    if (count === 0) throw new Error('Hábito não encontrado ou sem permissão')
 
     await Promise.all([fetchHabits(), fetchSchedules()])
   }

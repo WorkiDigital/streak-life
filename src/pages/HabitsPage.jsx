@@ -67,7 +67,8 @@ export default function HabitsPage() {
       await deleteHabit(habitId)
       toast.success('Hábito removido')
       setConfirmDelete(null)
-    } catch {
+    } catch (err) {
+      console.error('[deleteHabit]', err)
       toast.error('Erro ao remover hábito')
     }
   }
@@ -127,8 +128,8 @@ export default function HabitsPage() {
                         <span className="habit-item-time text-xs text-secondary">
                           <Clock size={12} />
                           {multiTime
-                            ? `${schedule.horarios[0]} … ${schedule.horarios[schedule.horarios.length - 1]} (${schedule.horarios.length}×)`
-                            : schedule.horarios[0]}
+                            ? `${schedule.horarios[0]?.slice(0, 5)} … ${schedule.horarios[schedule.horarios.length - 1]?.slice(0, 5)} (${schedule.horarios.length}×)`
+                            : schedule.horarios[0]?.slice(0, 5)}
                         </span>
                         <div className="habit-item-days">
                           {DAYS_LABEL.map((day, i) => (
