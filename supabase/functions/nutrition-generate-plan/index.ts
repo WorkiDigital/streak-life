@@ -115,10 +115,10 @@ serve(async (req: Request) => {
     }
 
     const modeDesc = mode === 'profissional'
-      ? 'Inclua macros detalhados (proteína, carboidrato, gordura em gramas), calorias estimadas, e observações técnicas em cada refeição.'
+      ? 'Inclua macros (proteína/carb/gordura em g) e calorias por refeição. Máximo 3 itens por refeição, 2 substituições.'
       : mode === 'detalhado'
-      ? 'Inclua quantidades aproximadas em gramas para cada alimento (use faixas como "130g a 160g").'
-      : 'Use linguagem simples, sem gramas. Descreva cada refeição como "uma fonte de proteína, uma fonte de carboidrato, legumes". Não inclua números exatos.'
+      ? 'Inclua quantidades em faixas (ex: 130g-160g). Máximo 3 itens por refeição, 2 substituições.'
+      : 'Sem gramas. Descreva cada item como "uma porção de X". Máximo 3 itens por refeição, 1 substituição. Seja muito conciso.'
 
     const userPrompt = `
 Monte um plano alimentar personalizado para este usuário:
@@ -144,7 +144,7 @@ Nível de estresse: ${perfil.nivel_estresse}
 Nível de detalhe desejado: ${mode}
 ${modeDesc}
 
-Gere o plano alimentar no formato EXATO especificado. Inclua todas as 4 refeições principais (café, almoço, lanche, jantar) nos horários informados.
+Gere o plano no formato EXATO. Inclua 4 refeições (café, almoço, lanche, jantar). Seja conciso — objetivo e observacoes_gerais com no máximo 2 frases cada.
 `.trim()
 
     // Usa callGemini direto com safetySettings mais permissivos para conteúdo de saúde/nutrição
@@ -158,7 +158,7 @@ Gere o plano alimentar no formato EXATO especificado. Inclua todas as 4 refeiç�
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: NUTRITION_SYSTEM_PROMPT }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 4096, temperature: 0.7, topP: 0.9 },
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.7, topP: 0.9 },
         safetySettings: [
           { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
