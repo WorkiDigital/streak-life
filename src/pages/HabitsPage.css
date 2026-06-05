@@ -118,6 +118,11 @@
   gap: var(--space-1);
 }
 
+.habit-item-btns .btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 /* Category filter scroll */
 .habits-filter-scroll {
   display: flex;

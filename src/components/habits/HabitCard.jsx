@@ -70,7 +70,7 @@ export default function HabitCard({ schedule }) {
             <span className="habit-card-time text-xs text-secondary">
               <Clock size={12} />
               {schedule.horarios?.length > 1
-                ? `${schedule.horarios[0]} … ${schedule.horarios[schedule.horarios.length - 1]} (${schedule.horarios.length}×)`
+                ? `${schedule.horarios[0]?.slice(0, 5)} … ${schedule.horarios[schedule.horarios.length - 1]?.slice(0, 5)} (${schedule.horarios.length}×)`
                 : (schedule.horarios?.[0] || schedule.horario)?.slice(0, 5) || '--:--'}
             </span>
             {isDone && schedule.log?.valor && (

@@ -132,7 +132,13 @@
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: var(--space-2);
   align-items: end;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: var(--space-3) 0;
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg-primary);
+  border-top: 1px solid var(--color-border-subtle);
+  z-index: 10;
 }
 
 .chat-input {
