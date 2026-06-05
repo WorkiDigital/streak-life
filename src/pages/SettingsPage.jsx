@@ -447,7 +447,7 @@ export default function SettingsPage() {
             Treino
           </h2>
           <div className="settings-card glass-card">
-            <div className="settings-form-grid">
+            <div className="settings-form-grid settings-training-grid">
               <div className="input-group">
                 <label className="input-label" htmlFor="settings-treina">Treina?</label>
                 <select id="settings-treina" className="input" value={profileForm.treina} onChange={e => updateField('treina', e.target.value)}>
