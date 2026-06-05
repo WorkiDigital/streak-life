@@ -101,11 +101,7 @@
   min-width: 0;
 }
 
-.settings-training-grid .input {
-  width: 100%;
-  min-width: 0;
-  height: 48px;
-}
+
 
 .settings-field-wide {
   grid-column: 1 / -1;

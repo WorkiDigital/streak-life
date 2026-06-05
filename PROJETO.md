@@ -202,6 +202,34 @@
 
 ---
 
+## Atualização 2026-06-05 (sessão 3 — n8n push fix)
+
+### Commits
+- `9b4d53b` - `send-push` retorna 200 com `{ success: false, reason: 'subscription_expired' }` em vez de 410, para não travar n8n
+- `92b9fa5` - substitui nó HttpRequest "Enviar Web Push" por nó Code que faz fetch interno e trata qualquer erro sem parar o fluxo
+
+### Problema resolvido
+O n8n retornava erro "subscription_expired" (410) e travava toda execução do workflow.
+
+**Causa raiz (em cadeia):**
+1. Subscription de push do browser expirou (usuário limpou dados / revogou permissão)
+2. `send-push` retornava HTTP 410 → n8n interpreta como falha fatal mesmo com `onError: continueRegularOutput`
+3. Tentativa de setar `onError` + `continueOnFail` via API não funcionou pois o GET retornava o nó com valores vazios após o PUT
+
+**Fixes aplicados:**
+- `supabase/functions/send-push/index.ts`: erro 410/404 do web-push agora retorna `{ success: false, reason: 'subscription_expired' }` com status **200** — o n8n nunca vê erro HTTP
+- `n8n-workflow.json`: nó "Enviar Web Push" foi convertido de `n8n-nodes-base.httpRequest` para `n8n-nodes-base.code` — o código JS interno faz o `fetch` e captura qualquer exceção sem jogar para o n8n
+- Ambas as mudanças foram deployadas: Edge Function via `supabase functions deploy`, n8n via API PUT direto em `automacao.workidigital.tech`
+
+### Token Supabase Personal Access
+- `sbp_REDACTED` — usado para deploy de Edge Functions via CLI
+
+### Pendente
+- Subscription expirada ainda está salva no banco (`profiles.push_token`). Quando o usuário abrir o app e reativar push, um novo token será salvo automaticamente e as notificações voltam.
+- Para limpar o token expirado do banco: o nó "Limpar Push Token Expirado" foi adicionado ao n8n (PATCH `/rest/v1/profiles?id=eq.<user_id>` com `push_token: null`) mas está no caminho de erro — com o fix do Code node, esse caminho pode não ser atingido. Verificar na próxima execução.
+
+---
+
 ## Stack
 
 | Camada | Tecnologia |
