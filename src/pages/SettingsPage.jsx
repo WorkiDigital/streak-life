@@ -66,6 +66,15 @@ const STRESS_OPTIONS = [
   { value: 'alto', label: 'Alto' },
 ]
 
+const ROUTINE_FIELDS = [
+  { field: 'horario_acordar', label: 'Acordar' },
+  { field: 'horario_dormir', label: 'Dormir' },
+  { field: 'cafe', label: 'Cafe' },
+  { field: 'almoco', label: 'Almoco' },
+  { field: 'jantar', label: 'Jantar' },
+  { field: 'lanche', label: 'Lanche' },
+]
+
 const DEFAULT_PROFILE_FORM = {
   nome: '',
   whatsapp: '',
@@ -416,31 +425,18 @@ export default function SettingsPage() {
             Rotina
           </h2>
           <div className="settings-card glass-card">
-            <div className="settings-form-grid">
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-acordar">Acorda</label>
-                <input id="settings-acordar" type="time" className="input" value={profileForm.horario_acordar} onChange={e => updateField('horario_acordar', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-dormir">Dorme</label>
-                <input id="settings-dormir" type="time" className="input" value={profileForm.horario_dormir} onChange={e => updateField('horario_dormir', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-cafe">Cafe</label>
-                <input id="settings-cafe" type="time" className="input" value={profileForm.cafe} onChange={e => updateField('cafe', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-almoco">Almoco</label>
-                <input id="settings-almoco" type="time" className="input" value={profileForm.almoco} onChange={e => updateField('almoco', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-jantar">Jantar</label>
-                <input id="settings-jantar" type="time" className="input" value={profileForm.jantar} onChange={e => updateField('jantar', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="settings-lanche">Lanche</label>
-                <input id="settings-lanche" type="time" className="input" value={profileForm.lanche} onChange={e => updateField('lanche', e.target.value)} />
-              </div>
+            <div className="settings-routine-grid">
+              {ROUTINE_FIELDS.map(item => (
+                <label className="settings-routine-block" key={item.field}>
+                  <span className="settings-routine-label">{item.label}</span>
+                  <input
+                    type="time"
+                    className="settings-routine-input"
+                    value={profileForm[item.field]}
+                    onChange={e => updateField(item.field, e.target.value)}
+                  />
+                </label>
+              ))}
             </div>
           </div>
         </section>
