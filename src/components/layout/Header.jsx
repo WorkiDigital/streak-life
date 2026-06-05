@@ -1,3 +1,4 @@
+import { User } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import './Header.css'
 
@@ -9,16 +10,6 @@ export default function Header() {
     if (hour < 12) return 'Bom dia'
     if (hour < 18) return 'Boa tarde'
     return 'Boa noite'
-  }
-
-  function getInitials(name) {
-    if (!name) return '?'
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase()
   }
 
   return (
@@ -33,12 +24,12 @@ export default function Header() {
             <span className="text-sm text-secondary">
               {getGreeting()},
             </span>
-            <span className="text-sm font-semibold">
-              {profile?.nome?.split(' ')[0] || 'Usuário'} 👋
+            <span className="header-user-name text-sm font-semibold">
+              {profile?.nome?.split(' ')[0] || 'Usuário'}
             </span>
           </div>
-          <div className="header-avatar" aria-label="Avatar do usuário">
-            {getInitials(profile?.nome)}
+          <div className="header-avatar" aria-label="Usuário">
+            <User size={20} strokeWidth={2.25} />
           </div>
         </div>
       </div>
