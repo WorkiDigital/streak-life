@@ -265,9 +265,61 @@ serve(async (req: Request) => {
     const { user, error: userError } = await getAuthUser(authHeader)
     if (userError || !user) return jsonResponse({ error: 'Nao autenticado' }, { status: 401 })
 
-    const { message = '', source = 'app', mode = 'chat' } = await req.json().catch(() => ({}))
+    const body = await req.json().catch(() => ({}))
+    const { message = '', source = 'app', mode = 'chat' } = body
     const cleanUserMessage = String(message || '').trim()
     const admin = getAdminClient()
+
+    // Modo setup_only: recebe dados estruturados do formulário, gera plano sem salvar
+    if (mode === 'setup_only') {
+      const perfilData = body.perfil ?? {}
+      const allText = normalizeText(JSON.stringify(perfilData))
+      if (hasAffirmedRisk(allText)) {
+        return jsonResponse({ risk: true })
+      }
+
+      const setupPrompt = `
+Voce recebeu os dados de perfil abaixo coletados via formulario de onboarding.
+Com base nesses dados, gere um plano completo e personalizado.
+
+Dados do perfil:
+${JSON.stringify(perfilData, null, 2)}
+
+Regras de prescricao:
+- HIDRATACAO: peso_kg * 35ml (leve/sedentario), * 40ml (moderado), * 45ml (alto). Nome: "Beber agua (meta: Xhl/dia)".
+- REFEICOES: Use os horarios informados em horarios_refeicoes para cafe, almoco, lanche e jantar.
+- EXTRAS: estresse alto → meditacao 07h | 4+ dias treino → alongamento pos-treino | ganhar_massa → suplementacao proteica | corrida → ar livre
+- Distribua os horarios de agua a cada 2h entre 2h apos acordar e 2h antes de dormir.
+- Inclua: agua, cafe, almoco, lanche, jantar, treino (se treina), reduzir telas 1h antes de dormir, dormir no horario, e extras conforme perfil.
+
+Responda SOMENTE com o bloco SETUP (sem texto fora dele). Nao inclua nenhuma explicacao.
+`.trim()
+
+      const raw = await callGemini(SYSTEM_PROMPT, [
+        { role: 'user', content: setupPrompt },
+      ])
+
+      const blocks = parseAgentBlocks(raw)
+      const setupBlock = blocks.find(b => b.type === 'SETUP')
+
+      if (setupBlock) {
+        // Garante agua_litros_diaria no perfil retornado
+        if (setupBlock.payload?.perfil && perfilData.peso_kg) {
+          const fator = perfilData.nivel_atividade === 'moderado' ? 0.040 : perfilData.nivel_atividade === 'alto' ? 0.045 : 0.035
+          setupBlock.payload.perfil.agua_litros_diaria = Math.round(perfilData.peso_kg * fator * 10) / 10
+          // Mescla dados do formulário no perfil gerado (fonte da verdade é o formulário)
+          setupBlock.payload.perfil = { ...perfilData, ...setupBlock.payload.perfil }
+        }
+        return jsonResponse({ setup: setupBlock.payload })
+      }
+
+      // Fallback: buildFallbackSetup com dados do formulário injetados no contexto
+      const fakeContext = { messages: [{ content: JSON.stringify(perfilData) }], profile: perfilData }
+      const fallback = buildFallbackSetup(fakeContext)
+      if (fallback) return jsonResponse({ setup: fallback })
+
+      return jsonResponse({ error: 'Nao foi possivel gerar o plano' }, { status: 422 })
+    }
 
     if (cleanUserMessage) {
       const { error } = await admin.from('chat_messages').insert({
