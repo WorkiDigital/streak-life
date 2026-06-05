@@ -157,7 +157,10 @@ function buildFallbackSetup(context: any) {
   // Exige todos os dados essenciais antes de gerar o plano
   const temRotina = /acord\w*\D{0,12}\d{1,2}(?::|h)/.test(allText) && /(?:durmo|dormir|sono)\D{0,18}\d{1,2}(?::|h)/.test(allText)
   const temEstresse = inferStressLevel(allText) !== null || /sem estress|pouco estress|nao tenho estress/.test(allText)
-  if (!idade || !altura_cm || !peso_kg || !peso_meta_kg || !temRotina || !temEstresse) return null
+  const temRefeicoes = /jant\w*\D{0,18}\d{1,2}(?::|h)/.test(allText)
+  const temPreferencias = /prefer|aliment|vegetar|vegano|simples|restri|alergi|intoler|nenhuma/.test(allText)
+  const temSaude = /saude|condicao|medicament|nenhuma|sem condicao|saudavel/.test(allText)
+  if (!idade || !altura_cm || !peso_kg || !peso_meta_kg || !temRotina || !temEstresse || !temRefeicoes || !temPreferencias || !temSaude) return null
 
   const wake = cleanClock(allText.match(/acord\w*\D{0,12}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '06:00'
   const treinoHora = cleanClock(allText.match(/trein\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '18:30'
@@ -288,9 +291,14 @@ serve(async (req: Request) => {
 Dados OBRIGATORIOS antes de emitir SETUP (todos precisam estar presentes):
 - idade, sexo, altura_cm, peso_kg, peso_meta_kg
 - horario_acordar, horario_dormir
+- nivel_atividade (sedentario, leve, moderado, alto)
 - treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino
 - horarios das refeicoes: cafe_da_manha, almoco, lanche_da_tarde, jantar
 - nivel_estresse
+- preferencias_alimentares (ex: comida simples, vegetariano, sem gluten, etc)
+- restricoes_alimentares (alergias, intolerâncias ou "nenhuma")
+- observacoes_saude (condicoes de saude relevantes, medicamentos em uso, ou "nenhuma")
+- tom_preferido (amigavel, direto ou motivacional)
 - triagem de seguranca concluida (sem sinais de risco alimentar)
 
 Se QUALQUER desses ainda nao foi informado, faca SOMENTE a proxima pergunta pendente. Nao emita SETUP.
@@ -317,9 +325,14 @@ Tarefa interna de configuracao. Analise o historico do onboarding.
 So responda com SETUP se TODOS estes dados estiverem presentes na conversa:
 - idade, sexo, altura_cm, peso_kg, peso_meta_kg
 - horario_acordar, horario_dormir
+- nivel_atividade
 - treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino_preferido
-- horario_jantar
+- horarios das refeicoes: cafe_da_manha, almoco, lanche_da_tarde, jantar
 - nivel_estresse
+- preferencias_alimentares
+- restricoes_alimentares
+- observacoes_saude
+- tom_preferido
 - triagem de seguranca concluida (sem sinais de risco alimentar)
 
 Se faltar qualquer um desses, responda somente: NEED_MORE
