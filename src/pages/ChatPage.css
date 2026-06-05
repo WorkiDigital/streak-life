@@ -1,5 +1,8 @@
 .chat-shell {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-primary);
 }
 
@@ -8,17 +11,19 @@
 }
 
 .chat-page {
-  min-height: calc(100dvh - var(--app-header-height) - var(--bottom-nav-height));
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: var(--space-4);
 }
 
 .onboarding-chat-shell .chat-page {
-  min-height: calc(100dvh - var(--space-8));
+  /* no special min-height needed anymore */
 }
 
 .chat-page-header {
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -45,8 +50,8 @@
 }
 
 .chat-window {
-  min-height: 420px;
-  max-height: calc(100dvh - 230px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-4);
   display: flex;
@@ -55,7 +60,7 @@
 }
 
 .onboarding-chat-shell .chat-window {
-  max-height: calc(100dvh - 180px);
+  /* no special max-height needed anymore */
 }
 
 .chat-loading,
@@ -166,7 +171,6 @@
 
 @media (max-width: 420px) {
   .chat-window {
-    min-height: 360px;
     padding: var(--space-3);
   }
 
