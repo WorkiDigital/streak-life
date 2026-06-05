@@ -396,13 +396,14 @@ export function HabitsProvider({ children }) {
 
     if (habitError) throw habitError
 
+    const defaultCanais = profile?.canais_preferidos ?? ['push', 'whatsapp']
     const times = horarios?.length ? horarios : [horario || '08:00']
     const rows = times.map(h => ({
       habit_id: habit.id,
       user_id: user.id,
       horario: h,
       dias_semana: diasSemana || [0, 1, 2, 3, 4, 5, 6],
-      canais: canais || ['push', 'whatsapp'],
+      canais: canais || defaultCanais,
     }))
 
     const { error: schedError } = await supabase

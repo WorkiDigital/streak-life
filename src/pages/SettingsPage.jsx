@@ -180,6 +180,8 @@ export default function SettingsPage() {
   const [savingPush, setSavingPush] = useState(false)
   const [silentMode, setSilentMode] = useState(Boolean(profile?.silent_mode))
   const [silentSaving, setSilentSaving] = useState(false)
+  const [canaisPreferidos, setCanaisPreferidos] = useState(profile?.canais_preferidos ?? ['push', 'whatsapp'])
+  const [canaisSaving, setCanaisSaving] = useState(false)
   const [lightMode, setLightMode] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'light'
   )
@@ -187,6 +189,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setProfileForm(buildProfileForm(profile))
     setSilentMode(Boolean(profile?.silent_mode))
+    setCanaisPreferidos(profile?.canais_preferidos ?? ['push', 'whatsapp'])
   }, [profile])
 
   const summary = useMemo(() => ([
@@ -219,6 +222,24 @@ export default function SettingsPage() {
       toast.error('Erro ao atualizar modo silencio')
     } finally {
       setSilentSaving(false)
+    }
+  }
+
+  async function toggleCanalPreferido(canal) {
+    if (canaisSaving) return
+    const next = canaisPreferidos.includes(canal)
+      ? canaisPreferidos.filter(c => c !== canal)
+      : [...canaisPreferidos, canal]
+    if (next.length === 0) return // pelo menos 1 canal obrigatório
+    setCanaisPreferidos(next)
+    setCanaisSaving(true)
+    try {
+      await updateProfile({ canais_preferidos: next })
+    } catch {
+      setCanaisPreferidos(canaisPreferidos)
+      toast.error('Erro ao salvar canais')
+    } finally {
+      setCanaisSaving(false)
     }
   }
 
@@ -525,6 +546,29 @@ export default function SettingsPage() {
               </div>
               <div className={`settings-toggle ${isPushActive ? 'on' : 'off'}`}>
                 {savingPush ? <Loader2 size={16} className="spin" /> : isPushActive ? <Bell size={16} /> : <BellOff size={16} />}
+              </div>
+            </div>
+
+            <div className="settings-divider" />
+
+            <div className="settings-row" style={{ cursor: 'default' }}>
+              <div className="settings-row-info">
+                <span className="settings-row-label">Canais de lembrete</span>
+                <span className="text-xs text-secondary">Aplicado a todos os hábitos</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[{ value: 'push', label: '📱 Push' }, { value: 'whatsapp', label: '💬 WhatsApp' }].map(ch => (
+                  <button
+                    key={ch.value}
+                    type="button"
+                    className={`channel-toggle glass-card${canaisPreferidos.includes(ch.value) ? ' active' : ''}`}
+                    onClick={() => toggleCanalPreferido(ch.value)}
+                    disabled={canaisSaving}
+                    style={{ fontSize: '12px', padding: '4px 10px' }}
+                  >
+                    {ch.label}
+                  </button>
+                ))}
               </div>
             </div>
 

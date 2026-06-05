@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { X, Loader2, Clock, Repeat } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import './HabitForm.css'
 
@@ -78,6 +79,7 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
 
   // Collect all horarios for this habit_id when editing
   const { schedules, createHabit, updateHabit } = useHabits()
+  const { profile } = useAuth()
   const existingHorarios = isEditing
     ? schedules
         .filter(s => s.habit_id === editingSchedule.habit_id)
@@ -87,10 +89,12 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
 
   const detected = detectExistingMode(existingHorarios)
 
+  // Usa canais do schedule existente (edição) ou preferência global do perfil
+  const defaultCanais = editingSchedule?.canais ?? profile?.canais_preferidos ?? ['push', 'whatsapp']
+
   const [nome, setNome] = useState(existingHabit?.nome || '')
   const [categoria, setCategoria] = useState(existingHabit?.categoria || 'outro')
   const [diasSemana, setDiasSemana] = useState(editingSchedule?.dias_semana || [0, 1, 2, 3, 4, 5, 6])
-  const [canais, setCanais] = useState(editingSchedule?.canais || ['push', 'whatsapp'])
   const [saving, setSaving] = useState(false)
 
   // Schedule mode
@@ -126,12 +130,6 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
     )
   }
 
-  function toggleCanal(canal) {
-    setCanais(prev =>
-      prev.includes(canal) ? prev.filter(c => c !== canal) : [...prev, canal]
-    )
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     if (!nome.trim() || diasSemana.length === 0 || intervalError) return
@@ -144,7 +142,7 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
         categoria,
         horarios: previewTimes,
         diasSemana,
-        canais,
+        canais: defaultCanais,
       }
 
       if (isEditing) {
@@ -312,26 +310,6 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
                   onClick={() => toggleDay(i)}
                 >
                   {day}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Channels */}
-          <div className="input-group">
-            <label className="input-label">Canais de notificação</label>
-            <div className="channels-selector">
-              {[
-                { value: 'push', label: '📱 Notificação Push' },
-                { value: 'whatsapp', label: '💬 WhatsApp' },
-              ].map(ch => (
-                <button
-                  key={ch.value}
-                  type="button"
-                  className={`channel-toggle glass-card ${canais.includes(ch.value) ? 'active' : ''}`}
-                  onClick={() => toggleCanal(ch.value)}
-                >
-                  {ch.label}
                 </button>
               ))}
             </div>
