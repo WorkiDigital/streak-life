@@ -263,25 +263,32 @@ export function HabitsProvider({ children }) {
     const habitIds = [...new Set(userSchedules.map(s => s.habit_id))]
 
     const matrix = habitIds.map(habitId => {
-      const schedule = userSchedules.find(s => s.habit_id === habitId)
+      const habitSchedules = userSchedules.filter(s => s.habit_id === habitId)
+      const schedule = habitSchedules[0]
       const habit = schedule?.habits
+      // Data de criação do hábito — dias anteriores não devem contar como "não registrado"
+      const habitCreatedAt = habit?.created_at ? startOfDay(new Date(habit.created_at)) : startDate
 
       const cells = dateRange.map(date => {
         const dateStr = format(date, 'yyyy-MM-dd')
         const dayOfWeek = date.getDay()
-        const isScheduled = schedule?.dias_semana?.includes(dayOfWeek)
+        // Verifica em qualquer um dos schedules do hábito (suporte a múltiplos horários)
+        const isScheduled = habitSchedules.some(s => s.dias_semana?.includes(dayOfWeek))
         const log = logs.find(
           l => l.habit_id === habitId && l.data === dateStr
         )
 
         let cellStatus = 'future' // default: gray
-        if (isScheduled) {
+        // Dias antes da criação do hábito sempre cinza
+        if (isBefore(startOfDay(date), habitCreatedAt)) {
+          cellStatus = 'future'
+        } else if (isScheduled) {
           if (log?.status === 'feito') {
             cellStatus = 'done'
           } else if (isBefore(startOfDay(date), startOfDay(today)) && !isToday(date)) {
-            cellStatus = log?.status === 'nao_feito' ? 'missed' : 'missed'
+            cellStatus = 'missed'
           } else if (isToday(date)) {
-            cellStatus = log?.status === 'feito' ? 'done' : 'pending'
+            cellStatus = 'pending'
           }
         }
 
