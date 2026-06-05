@@ -557,18 +557,26 @@ export default function SettingsPage() {
                 <span className="text-xs text-secondary">Aplicado a todos os hábitos</span>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {[{ value: 'push', label: '📱 Push' }, { value: 'whatsapp', label: '💬 WhatsApp' }].map(ch => (
-                  <button
-                    key={ch.value}
-                    type="button"
-                    className={`channel-toggle glass-card${canaisPreferidos.includes(ch.value) ? ' active' : ''}`}
-                    onClick={() => toggleCanalPreferido(ch.value)}
-                    disabled={canaisSaving}
-                    style={{ fontSize: '12px', padding: '4px 10px' }}
-                  >
-                    {ch.label}
-                  </button>
-                ))}
+                {[{ value: 'push', label: '📱 Push' }, { value: 'whatsapp', label: '💬 WhatsApp' }].map(ch => {
+                  const isActive = Array.isArray(canaisPreferidos) && canaisPreferidos.includes(ch.value)
+                  return (
+                    <button
+                      key={ch.value}
+                      type="button"
+                      className={`channel-toggle glass-card${isActive ? ' active' : ''}`}
+                      onClick={() => toggleCanalPreferido(ch.value)}
+                      style={{
+                        fontSize: '12px',
+                        padding: '4px 10px',
+                        opacity: canaisSaving ? 0.6 : 1,
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
+                      }}
+                    >
+                      {ch.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
