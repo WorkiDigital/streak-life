@@ -49,6 +49,12 @@ function Step1({ data, onChange }) {
       <h2 className="ob-step-title">Dados físicos</h2>
       <p className="ob-step-subtitle">Para calcular sua meta de hidratação e plano personalizado.</p>
 
+      <div className="ob-health-notice">
+        O Streak Life e uma ferramenta de organizacao de habitos e educacao geral.
+        Ele nao substitui nutricionista, medico, psicologo ou atendimento de emergencia.
+        Disponivel apenas para maiores de 18 anos.
+      </div>
+
       <div className="ob-field">
         <label className="ob-label">Como podemos te chamar?<span className="ob-required">*</span></label>
         <input className="ob-input" placeholder="Seu nome" value={data.nome} onChange={e => onChange('nome', e.target.value)} />
@@ -57,7 +63,10 @@ function Step1({ data, onChange }) {
       <div className="ob-row">
         <div className="ob-field">
           <label className="ob-label">Idade<span className="ob-required">*</span></label>
-          <input className="ob-input" type="number" min="10" max="100" placeholder="31" value={data.idade} onChange={e => onChange('idade', e.target.value)} />
+          <input className="ob-input" type="number" min="18" max="100" placeholder="31" value={data.idade} onChange={e => onChange('idade', e.target.value)} />
+          {data.idade && Number(data.idade) < 18 && (
+            <span className="ob-field-error">O plano personalizado esta disponivel apenas para maiores de 18 anos.</span>
+          )}
         </div>
         <div className="ob-field">
           <label className="ob-label">Sexo<span className="ob-required">*</span></label>
@@ -413,8 +422,13 @@ const defaultForm = {
   tom_preferido: 'amigavel',
 }
 
+function isAdultAge(value) {
+  const age = Number(value)
+  return Number.isFinite(age) && age >= 18
+}
+
 function canAdvance(step, form) {
-  if (step === 0) return form.nome.trim() && form.idade && form.sexo && form.altura_cm && form.peso_kg && form.peso_meta_kg
+  if (step === 0) return form.nome.trim() && isAdultAge(form.idade) && form.sexo && form.altura_cm && form.peso_kg && form.peso_meta_kg
   if (step === 1) return form.horario_acordar && form.horario_dormir
   if (step === 2) return form.treina !== null
   if (step === 3) return form.objetivo && form.nivel_atividade && form.nivel_estresse

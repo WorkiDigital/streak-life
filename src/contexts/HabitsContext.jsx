@@ -26,6 +26,50 @@ function todayInTz(timezone) {
   }
 }
 
+function localDate(dateStr) {
+  return startOfDay(new Date(`${dateStr}T12:00:00`))
+}
+
+function habitCreatedDay(schedule, fallbackDate) {
+  const raw = schedule?.habits?.created_at ?? schedule?.created_at
+  return raw ? startOfDay(new Date(raw)) : startOfDay(fallbackDate)
+}
+
+function buildExpectedHabitEntries(schedules, startDate, endDate) {
+  const dateRange = eachDayOfInterval({ start: startDate, end: endDate })
+  const expectedByHabitAndDate = new Map()
+
+  for (const schedule of schedules) {
+    const createdAt = habitCreatedDay(schedule, startDate)
+
+    for (const date of dateRange) {
+      const day = date.getDay()
+      if (!schedule.dias_semana?.includes(day)) continue
+      if (isBefore(startOfDay(date), createdAt)) continue
+
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const key = `${schedule.habit_id}:${dateStr}`
+      if (!expectedByHabitAndDate.has(key)) {
+        expectedByHabitAndDate.set(key, {
+          habitId: schedule.habit_id,
+          date: dateStr,
+        })
+      }
+    }
+  }
+
+  return Array.from(expectedByHabitAndDate.values())
+}
+
+function countDoneExpected(expectedEntries, logs) {
+  const doneLogKeys = new Set(
+    logs
+      .filter(log => log.status === 'feito')
+      .map(log => `${log.habit_id}:${log.data}`)
+  )
+  return expectedEntries.filter(item => doneLogKeys.has(`${item.habitId}:${item.date}`)).length
+}
+
 export function HabitsProvider({ children }) {
   const { user, profile } = useAuth()
   const timezone = profile?.timezone || 'America/Fortaleza'
@@ -102,7 +146,7 @@ export function HabitsProvider({ children }) {
       await Promise.all([
         fetchHabits(),
         fetchSchedules(),
-        fetchLogs(subDays(new Date(), 30), new Date()),
+        fetchLogs(subDays(new Date(), 365), new Date()),
       ])
       setLoading(false)
     }
@@ -331,48 +375,41 @@ export function HabitsProvider({ children }) {
     return { matrix, dates: dateRange }
   }
 
-  // Calculate stats
+  // Calculate stats from expected habits, not only existing logs.
   function getStats(days = 30) {
     const todayStr = todayInTz(timezone)
-    // Use noon to avoid DST boundary issues — date arithmetic only, never time
-    const today = startOfDay(new Date(todayStr + 'T12:00:00'))
+    const today = localDate(todayStr)
     const startDate = subDays(today, days - 1)
-    const startStr = format(startDate, 'yyyy-MM-dd')
+    const expectedEntries = buildExpectedHabitEntries(schedules, startDate, today)
 
-    const relevantLogs = logs.filter(
-      l => l.data >= startStr && l.data <= todayStr
-    )
-
-    const doneLogs = relevantLogs.filter(l => l.status === 'feito')
-    const totalScheduled = relevantLogs.filter(
-      l => l.status === 'feito' || l.status === 'nao_feito'
-    )
-
-    const adherenceRate = totalScheduled.length > 0
-      ? Math.round((doneLogs.length / totalScheduled.length) * 100)
+    const totalDone = countDoneExpected(expectedEntries, logs)
+    const totalExpected = expectedEntries.length
+    const adherenceRate = totalExpected > 0
+      ? Math.round((totalDone / totalExpected) * 100)
       : 0
 
-    // Streak: walk backwards from today; skip today if no logs yet
-    // Use all logs (not just relevantLogs) so streak survives period changes
+    // Flexible streak: a day counts when at least 70% of expected habits are done.
     let streak = 0
     let checkDate = today
-    // Look up to 365 days back to find streak start
     for (let i = 0; i < 365; i++) {
       const dateStr = format(checkDate, 'yyyy-MM-dd')
-      const dayLogs = logs.filter(l => l.data === dateStr)
-      const scheduledThatDay = schedules.some(s =>
-        s.dias_semana?.includes(startOfDay(new Date(dateStr + 'T12:00:00')).getDay())
-      )
+      const expectedForDay = buildExpectedHabitEntries(schedules, checkDate, checkDate)
 
-      // Skip today if user hasn't logged anything yet (streak still running)
-      if (i === 0 && dayLogs.length === 0) {
+      if (expectedForDay.length === 0) {
         checkDate = subDays(checkDate, 1)
         continue
       }
 
-      // Day is counted if all scheduled habits were done, or no habits were scheduled
-      const allDone = !scheduledThatDay || (dayLogs.length > 0 && dayLogs.every(l => l.status === 'feito'))
-      if (!allDone) break
+      const doneForDay = countDoneExpected(expectedForDay, logs)
+
+      // Skip today if the user has not interacted with any habit yet.
+      if (i === 0 && doneForDay === 0 && !logs.some(log => log.data === dateStr)) {
+        checkDate = subDays(checkDate, 1)
+        continue
+      }
+
+      const dayRate = doneForDay / expectedForDay.length
+      if (dayRate < 0.7) break
       streak++
       checkDate = subDays(checkDate, 1)
     }
@@ -380,23 +417,23 @@ export function HabitsProvider({ children }) {
     return {
       adherenceRate,
       streak,
-      totalDone: doneLogs.length,
-      totalScheduled: totalScheduled.length,
+      totalDone,
+      totalScheduled: totalExpected,
+      totalExpected,
     }
   }
 
-  // Weekly adherence for the last N weeks (for the line chart)
+  // Weekly adherence for the last N weeks (expected habits based)
   function getWeeklyStats(weeks = 8) {
-    const today = new Date()
+    const todayStr = todayInTz(timezone)
+    const today = localDate(todayStr)
     const result = []
     for (let w = weeks - 1; w >= 0; w--) {
       const weekStart = subDays(today, w * 7 + 6)
       const weekEnd = subDays(today, w * 7)
-      const startStr = format(weekStart, 'yyyy-MM-dd')
-      const endStr = format(weekEnd, 'yyyy-MM-dd')
-      const weekLogs = logs.filter(l => l.data >= startStr && l.data <= endStr)
-      const done = weekLogs.filter(l => l.status === 'feito').length
-      const total = weekLogs.filter(l => l.status === 'feito' || l.status === 'nao_feito').length
+      const expectedEntries = buildExpectedHabitEntries(schedules, weekStart, weekEnd)
+      const done = countDoneExpected(expectedEntries, logs)
+      const total = expectedEntries.length
       result.push({
         label: format(weekEnd, 'dd/MM'),
         pct: total > 0 ? Math.round((done / total) * 100) : null,
@@ -567,7 +604,7 @@ export function HabitsProvider({ children }) {
     refreshData: () => Promise.all([
       fetchHabits(),
       fetchSchedules(),
-      fetchLogs(subDays(new Date(), 30), new Date()),
+      fetchLogs(subDays(new Date(), 365), new Date()),
     ]),
   }
 
