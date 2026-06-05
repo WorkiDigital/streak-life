@@ -122,7 +122,7 @@ export default function HabitCard({ schedule }) {
         </button>
       </div>
 
-      {/* Mini-modal de valor/nota — apenas para hábitos de horário fixo */}
+      {/* Mini-modal de detalhe/nota — apenas para hábitos de horário fixo */}
       {showExtra && !isMulti && (
         <div className="habit-extra-panel glass-card">
           <div className="habit-extra-header">
@@ -133,7 +133,7 @@ export default function HabitCard({ schedule }) {
           </div>
           <input
             className="input"
-            placeholder="Quantidade (ex: 2L, 45min)"
+            placeholder="Detalhe rápido (opcional)"
             value={valor}
             onChange={e => setValor(e.target.value)}
             autoFocus
