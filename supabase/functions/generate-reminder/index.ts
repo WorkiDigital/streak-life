@@ -21,13 +21,6 @@ serve(async (req: Request) => {
       category,
       tomPreferido,
       recentAdherence,
-      // Campos extras de perfil para personalização
-      objetivo,
-      agua_litros_diaria,
-      tipo_treino,
-      dias_treino,
-      peso_kg,
-      peso_meta_kg,
     } = await req.json()
 
     if (!habitName) {
@@ -41,43 +34,14 @@ serve(async (req: Request) => {
       contextPrompt = buildContextPrompt(context)
     }
 
-    // Contexto extra baseado na categoria do hábito
-    let extraContext = ''
-    if (category === 'hidratacao' && agua_litros_diaria) {
-      extraContext = `Meta de hidratacao do usuario: ${agua_litros_diaria}L por dia. Mencione a meta de forma encorajadora.`
-    } else if (category === 'alimentacao') {
-      if (objetivo === 'emagrecer' && peso_kg && peso_meta_kg) {
-        extraContext = `Usuario quer emagrecer de ${peso_kg}kg para ${peso_meta_kg}kg. Incentive escolhas leves e nutritivas, sem culpa.`
-      } else if (objetivo === 'ganhar_massa') {
-        extraContext = `Usuario quer ganhar massa muscular. Incentive refeicao rica em proteina.`
-      } else if (objetivo === 'performance') {
-        extraContext = `Usuario foca em performance. Incentive nutricao para energia e foco.`
-      }
-    } else if (category === 'treino') {
-      if (tipo_treino === 'forca') {
-        extraContext = `Usuario treina forca/musculacao ${dias_treino ? `${dias_treino}x por semana` : ''}. Mensagem motivacional para o treino de hoje.`
-      } else if (tipo_treino === 'corrida') {
-        extraContext = `Usuario corre. Mensagem para animar a corrida de hoje.`
-      } else if (dias_treino) {
-        extraContext = `Usuario treina ${dias_treino}x por semana. Mensagem motivacional curta.`
-      }
-    } else if (category === 'medicamento') {
-      extraContext = `Habito de suplementacao/medicamento. Seja direto e gentil, sem alarmismo.`
-    }
-
     const userPrompt = `
 Gere um lembrete curto, natural e anticulpa para o habito "${habitName}".
 Usuario: ${userName || 'usuario'}
 Categoria: ${category || 'outro'}
 Tom preferido: ${tomPreferido || 'amigavel'}
 Aderencia recente: ${recentAdherence ?? 'desconhecida'}
-${extraContext ? `\nContexto adicional: ${extraContext}` : ''}
 
-Regras:
-- Maximo 2 frases curtas
-- Use emoji relevante
-- Seja especifico quando tiver a meta (ex: "Mais um copo para chegar nos 2.8L de hoje!")
-- Nao emita SETUP nem ACTION
+Responda apenas com o texto visivel do lembrete. Nao emita SETUP nem ACTION aqui.
 `.trim()
 
     const raw = await callGemini(SYSTEM_PROMPT, [

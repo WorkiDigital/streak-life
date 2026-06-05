@@ -92,90 +92,6 @@ function hasAffirmedRisk(text: string) {
   })
 }
 
-// Calcula litros/dia baseado no peso e nível de atividade (fórmula padrão 35ml/kg)
-function prescribeHydration(pesoKg: number, nivelAtividade: string, wake: string, end: string) {
-  const fator = nivelAtividade === 'moderado' ? 0.040 : nivelAtividade === 'alto' ? 0.045 : 0.035
-  const litros = Math.round(pesoKg * fator * 10) / 10
-  const horarios = timesEveryTwoHours(wake, end)
-  return { litros, horarios }
-}
-
-// Retorna horários de refeições baseados na rotina do usuário
-function prescribeRefeicoes(wake: string, jantarHora: string) {
-  return {
-    cafe: addMinutes(wake, 30),
-    almoco: '12:00',
-    lanche: '15:30',
-    jantar: jantarHora,
-  }
-}
-
-// Hábitos extras condicionais baseados no perfil
-function prescribeExtras(opts: {
-  nivel_estresse: string | null
-  dias_treino: number | null
-  tipo_treino: string | null
-  objetivo: string
-  treinoHora: string
-  treinoDias: number[]
-  canais: string[]
-}) {
-  const extras: any[] = []
-  const { nivel_estresse, dias_treino, tipo_treino, objetivo, treinoHora, treinoDias, canais } = opts
-
-  if (nivel_estresse === 'alto') {
-    extras.push({
-      habito: 'Meditacao',
-      categoria: 'meditacao',
-      horarios: ['07:00'],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    })
-  }
-
-  if (dias_treino && dias_treino >= 4) {
-    extras.push({
-      habito: 'Alongamento pos-treino',
-      categoria: 'alongamento',
-      horarios: [addMinutes(treinoHora, 60)],
-      dias_semana: treinoDias,
-      canais: ['push'],
-    })
-  }
-
-  if (objetivo === 'ganhar_massa') {
-    extras.push({
-      habito: 'Suplementacao proteica',
-      categoria: 'medicamento',
-      horarios: ['08:00', addMinutes(treinoHora, 30)],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    })
-  }
-
-  if (objetivo === 'performance') {
-    extras.push({
-      habito: 'Leitura e foco',
-      categoria: 'leitura',
-      horarios: ['21:00'],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    })
-  }
-
-  if (tipo_treino === 'corrida') {
-    extras.push({
-      habito: 'Ar livre / Caminhada',
-      categoria: 'ar_livre',
-      horarios: [treinoHora],
-      dias_semana: treinoDias,
-      canais,
-    })
-  }
-
-  return extras
-}
-
 function buildFallbackSetup(context: any) {
   const allText = normalizeText(
     (context.messages ?? [])
@@ -198,10 +114,8 @@ function buildFallbackSetup(context: any) {
   const treinoHora = cleanClock(allText.match(/trein\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '18:30'
   const jantarHora = cleanClock(allText.match(/jant\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '20:00'
   const sleep = cleanClock(allText.match(/(?:durmo|dormir|sono)\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '23:00'
-
-  const nivel_atividade = /sedentari/.test(allText) ? 'sedentario' : /moderad/.test(allText) ? 'moderado' : 'leve'
-  const nivel_estresse = inferStressLevel(allText)
-  const objetivo = inferGoal(allText)
+  const hydrationStart = addMinutes(wake, 120)
+  const hydrationEnd = addMinutes(jantarHora, -120)
 
   const sexo = /\b(homem|masculino|sexo m|sou m)\b/.test(allText)
     ? 'M'
@@ -216,71 +130,6 @@ function buildFallbackSetup(context: any) {
     ? [1, 2, 3, 4, 5]
     : dias_treino === 4 ? [1, 2, 4, 5] : dias_treino === 3 ? [1, 3, 5] : [1, 3, 5]
 
-  const hydrationStart = addMinutes(wake, 120)
-  const hydrationEnd = addMinutes(jantarHora, -120)
-  const { litros, horarios: aguaHorarios } = prescribeHydration(peso_kg, nivel_atividade, hydrationStart, hydrationEnd)
-  const refeicoes = prescribeRefeicoes(wake, jantarHora)
-
-  const lembretes: any[] = [
-    {
-      habito: `Beber agua (meta: ${litros}L/dia)`,
-      categoria: 'hidratacao',
-      horarios: aguaHorarios,
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais,
-    },
-    {
-      habito: 'Cafe da manha',
-      categoria: 'alimentacao',
-      horarios: [refeicoes.cafe],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    },
-    {
-      habito: 'Almoco',
-      categoria: 'alimentacao',
-      horarios: [refeicoes.almoco],
-      dias_semana: [1, 2, 3, 4, 5],
-      canais: ['push'],
-    },
-    {
-      habito: 'Lanche da tarde',
-      categoria: 'alimentacao',
-      horarios: [refeicoes.lanche],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    },
-    {
-      habito: 'Jantar no horario',
-      categoria: 'alimentacao',
-      horarios: [jantarHora],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais,
-    },
-    {
-      habito: 'Treino',
-      categoria: 'treino',
-      horarios: [treinoHora],
-      dias_semana: treinoDias,
-      canais,
-    },
-    {
-      habito: 'Reduzir telas',
-      categoria: 'tela',
-      horarios: [addMinutes(sleep, -60)],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais: ['push'],
-    },
-    {
-      habito: 'Dormir cedo',
-      categoria: 'sono',
-      horarios: [sleep],
-      dias_semana: [0, 1, 2, 3, 4, 5, 6],
-      canais,
-    },
-    ...prescribeExtras({ nivel_estresse, dias_treino, tipo_treino, objetivo, treinoHora, treinoDias, canais }),
-  ]
-
   return {
     perfil: {
       nome: context.profile?.nome,
@@ -289,11 +138,11 @@ function buildFallbackSetup(context: any) {
       altura_cm,
       peso_kg,
       peso_meta_kg,
-      nivel_atividade,
+      nivel_atividade: /sedentari/.test(allText) ? 'sedentario' : /leve/.test(allText) ? 'leve' : /moderad/.test(allText) ? 'moderado' : 'leve',
       treina: /trein|musculacao|academia|corrida/.test(allText),
       dias_treino: dias_treino ?? null,
       tipo_treino,
-      objetivo,
+      objetivo: inferGoal(allText),
       objetivo_descricao: inferGoalDescription(allText, peso_kg, peso_meta_kg),
       prazo_meta: allText.match(/(\d+\s*(?:semanas?|meses?|anos?))/)?.[1] ?? null,
       horario_acordar: wake,
@@ -302,13 +151,48 @@ function buildFallbackSetup(context: any) {
       preferencias_alimentares: /simples|pratic/.test(allText) ? 'comidas simples e praticas' : null,
       restricoes_alimentares: /sem restri|nenhuma restri/.test(allText) ? 'nenhuma informada' : null,
       observacoes_saude: 'Triagem inicial sem sinais de risco informados',
-      nivel_estresse,
-      horarios_refeicoes: refeicoes,
-      agua_litros_diaria: litros,
+      nivel_estresse: inferStressLevel(allText),
+      horarios_refeicoes: { jantar: jantarHora },
       timezone: context.profile?.timezone ?? 'America/Fortaleza',
       tom_preferido: context.profile?.tom_preferido ?? 'amigavel',
     },
-    lembretes,
+    lembretes: [
+      {
+        habito: 'Beber agua',
+        categoria: 'hidratacao',
+        horarios: timesEveryTwoHours(hydrationStart, hydrationEnd),
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+      {
+        habito: 'Treino',
+        categoria: 'treino',
+        horarios: [treinoHora],
+        dias_semana: treinoDias,
+        canais,
+      },
+      {
+        habito: 'Jantar no horario',
+        categoria: 'alimentacao',
+        horarios: [jantarHora],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+      {
+        habito: 'Reduzir telas',
+        categoria: 'tela',
+        horarios: [addMinutes(sleep, -60)],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais: ['push'],
+      },
+      {
+        habito: 'Dormir cedo',
+        categoria: 'sono',
+        horarios: [sleep],
+        dias_semana: [0, 1, 2, 3, 4, 5, 6],
+        canais,
+      },
+    ],
   }
 }
 
