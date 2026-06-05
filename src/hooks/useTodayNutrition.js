@@ -7,6 +7,11 @@ export function useTodayNutrition(date) {
   const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
+    if (!date) {
+      setData(null)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
