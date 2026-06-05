@@ -184,7 +184,7 @@ export async function callGemini(systemPrompt: string, messages: Array<{ role: s
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: {
-        maxOutputTokens: 1600,
+        maxOutputTokens: 4096,
         temperature: 0.75,
         topP: 0.9,
       },
