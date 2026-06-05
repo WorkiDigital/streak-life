@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirme seu email - Streak Life</title>
+  </head>
+  <body style="margin:0;padding:0;background:#0f1117;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#f4f6fb;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f1117;margin:0;padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#191d29;border:1px solid #2a3142;border-radius:20px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px 28px 10px 28px;text-align:center;">
+                <div style="display:inline-block;width:58px;height:58px;border-radius:18px;background:#22c55e;color:#06120a;font-size:22px;font-weight:900;line-height:58px;text-align:center;margin-bottom:14px;">SL</div>
+                <div style="font-size:26px;font-weight:800;line-height:1.2;color:#22c55e;">Streak Life</div>
+                <div style="margin-top:8px;font-size:14px;line-height:1.6;color:#a7b0c3;">Consistência vence intensidade.</div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 28px 0 28px;">
+                <h1 style="margin:0;color:#ffffff;font-size:26px;line-height:1.25;font-weight:800;text-align:center;">Bem-vindo ao seu novo ritmo.</h1>
+                <p style="margin:18px 0 0 0;color:#c8d0df;font-size:16px;line-height:1.7;text-align:center;">
+                  Falta só confirmar seu email para entrar no Streak Life e começar a montar seus hábitos com IA.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding:28px 28px 18px 28px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#22c55e;color:#07110b;text-decoration:none;font-size:16px;font-weight:800;line-height:1;padding:16px 24px;border-radius:14px;">
+                  Verificar meu email
+                </a>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 28px 24px 28px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#111520;border:1px solid #252c3d;border-radius:16px;">
+                  <tr>
+                    <td style="padding:18px 18px 16px 18px;">
+                      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#22c55e;margin-bottom:10px;">O que vem depois</div>
+                      <div style="font-size:15px;line-height:1.7;color:#dce3ef;">
+                        1. Confirmar seu email<br>
+                        2. Responder algumas perguntas rápidas<br>
+                        3. Receber um plano inicial com lembretes práticos
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 28px 26px 28px;">
+                <p style="margin:0;color:#8f9aaf;font-size:13px;line-height:1.7;text-align:center;">
+                  Se o botão não abrir, copie e cole este link no navegador:
+                </p>
+                <p style="margin:10px 0 0 0;color:#a7b0c3;font-size:12px;line-height:1.6;word-break:break-all;text-align:center;">
+                  {{ .ConfirmationURL }}
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 28px;background:#111520;border-top:1px solid #252c3d;text-align:center;">
+                <p style="margin:0;color:#7d879a;font-size:12px;line-height:1.6;">
+                  Email enviado para {{ .Email }}. Se você não criou uma conta no Streak Life, pode ignorar esta mensagem.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

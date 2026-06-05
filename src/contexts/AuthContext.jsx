@@ -103,7 +103,17 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function signUp(email, password) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const emailRedirectTo = `${window.location.origin}/login?verified=1`
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo,
+        data: {
+          nome: email.split('@')[0],
+        },
+      },
+    })
     if (error) throw error
     return data
   }

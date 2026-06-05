@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LogIn, UserPlus, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react'
+import { LogIn, UserPlus, Mail, Lock, Loader2, Eye, EyeOff, Sprout, CheckCircle2 } from 'lucide-react'
 import './LoginPage.css'
 
 export default function LoginPage() {
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const location = useLocation()
 
   const from = location.state?.from?.pathname || '/'
+  const emailVerified = new URLSearchParams(location.search).get('verified') === '1'
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -35,7 +36,7 @@ export default function LoginPage() {
     } catch (err) {
       const messages = {
         'Invalid login credentials': 'Email ou senha incorretos.',
-        'User already registered': 'Este email já está cadastrado.',
+        'User already registered': 'Este email ja esta cadastrado.',
         'Password should be at least 6 characters': 'A senha precisa ter no mínimo 6 caracteres.',
         'Unable to validate email address: invalid format': 'Formato de email inválido.',
       }
@@ -52,10 +53,12 @@ export default function LoginPage() {
         <div className="login-container">
           <div className="login-card glass-card">
             <div className="login-success">
-              <div className="login-success-icon animate-check-pop">✅</div>
+              <div className="login-success-icon animate-check-pop">
+                <CheckCircle2 size={28} strokeWidth={2.4} />
+              </div>
               <h2>Conta criada!</h2>
               <p className="text-secondary">
-                Verifique seu email para confirmar o cadastro. Depois volte aqui para entrar.
+                Enviamos um email bonito para você confirmar o cadastro. Depois da verificação, volte aqui para entrar.
               </p>
               <button
                 className="btn btn-primary btn-full btn-lg"
@@ -76,7 +79,7 @@ export default function LoginPage() {
 
       <div className="login-container">
         <div className="login-hero">
-          <span className="login-logo-icon">🌱</span>
+          <Sprout className="login-logo-icon" size={48} strokeWidth={2.4} />
           <h1 className="login-logo-text">Streak Life</h1>
           <p className="login-tagline">
             Consistência vence intensidade.
@@ -104,6 +107,12 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
+            {emailVerified && !isSignUp && (
+              <div className="login-verified">
+                Email confirmado. Agora entre para começar seu plano.
+              </div>
+            )}
+
             <div className="input-group">
               <label className="input-label" htmlFor="login-email">Email</label>
               <div className="input-with-icon">
