@@ -12,13 +12,13 @@
           ]
         }
       },
-      "id": "cron-15min",
+      "id": "44291dc0-3e6e-4a36-9877-ee0891070927",
       "name": "Cron (15 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
       "position": [
-        0,
-        300
+        -1376,
+        1968
       ]
     },
     {
@@ -28,110 +28,60 @@
             {
               "id": "env-supabase-url",
               "name": "SUPABASE_URL",
-              "value": "={{ $env.SUPABASE_URL }}",
+              "value": "=https://rldqzqyhqsftwaiyfbwx.supabase.co",
               "type": "string"
             },
             {
               "id": "env-supabase-key",
               "name": "SUPABASE_SERVICE_KEY",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}",
+              "value": "=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZHF6cXlocXNmdHdhaXlmYnd4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDU3NzU2NiwiZXhwIjoyMDk2MTUzNTY2fQ.rpzId7I8-ELL_4YzJLKabUZSRyjq3RHdVWa7nQbEGjU",
               "type": "string"
             },
             {
               "id": "env-evolution-url",
               "name": "EVOLUTION_URL",
-              "value": "={{ $env.EVOLUTION_URL }}",
+              "value": "=https://painelevo.workidigital.tech",
               "type": "string"
             },
             {
               "id": "env-evolution-instance",
               "name": "EVOLUTION_INSTANCE",
-              "value": "={{ $env.EVOLUTION_INSTANCE }}",
+              "value": "=watsapp-1513",
               "type": "string"
             },
             {
               "id": "env-evolution-key",
               "name": "EVOLUTION_API_KEY",
-              "value": "={{ $env.EVOLUTION_API_KEY }}",
+              "value": "=b9110a3bb5aa9fdb752c675fb6fd3fa6",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "edit-fields-env",
+      "id": "1eee5ea4-0da2-4d4c-aa29-db11e926a31a",
       "name": "Variaveis de Ambiente",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        220,
-        300
+        -1152,
+        1968
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
+        "url": "={{ $json.SUPABASE_URL }}/rest/v1/rpc/get_pending_schedules",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ $json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": []
-        },
-        "options": {}
-      },
-      "id": "buscar-habitos",
-      "name": "Buscar Hábitos Pendentes",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [
-        440,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "={{ Array.isArray($json) ? $json : [] }}",
-        "options": {}
-      },
-      "id": "split-items",
-      "name": "Separar em Itens",
-      "type": "n8n-nodes-base.itemLists",
-      "typeVersion": 2,
-      "position": [
-        660,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/generate-reminder",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "=Bearer {{ $json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -141,17 +91,66 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"userId\": \"{{ $json.user_id }}\",\n  \"userName\": \"{{ $json.nome_usuario }}\",\n  \"habitName\": \"{{ $json.nome_habito }}\",\n  \"category\": \"{{ $json.categoria }}\",\n  \"tomPreferido\": \"{{ $json.tom }}\"\n}",
+        "jsonBody": "{}",
         "options": {}
       },
-      "id": "gemini-reminder",
+      "id": "01d44c20-6d80-4d73-ad19-43a284afe713",
+      "name": "Buscar Hábitos Pendentes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -912,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.all();\nconst items = Array.isArray(data[0]?.json) ? data[0].json : data.map(i => i.json);\n\nreturn items.map(item => {\n  let parsedPush = null;\n  if (item.push_token) {\n    try {\n      const p = typeof item.push_token === 'string' ? JSON.parse(item.push_token) : item.push_token;\n      if (typeof p === 'object' && p !== null && p.endpoint) parsedPush = p;\n    } catch (e) {}\n  }\n  \n  return {\n    json: {\n      ...item,\n      push_token: parsedPush,\n      canais: Array.isArray(item.canais) ? item.canais : [item.canais].filter(Boolean)\n    }\n  };\n});"
+      },
+      "id": "0f62e2ce-5ede-478a-b14e-f2453138f45a",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/functions/v1/generate-reminder",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { userId: $json.user_id, userName: $json.nome_usuario, habitName: $json.nome_habito, category: $json.categoria, tomPreferido: $json.tom } }}",
+        "options": {}
+      },
+      "id": "3e00600b-fee1-4d67-bab8-5cc109939c6f",
       "name": "Gerar Lembrete (IA Unica)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        880,
-        300
-      ]
+        -400,
+        1968
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -166,119 +165,135 @@
             {
               "id": "uid",
               "name": "user_id",
-              "value": "={{ $node['Separar em Itens'].json.user_id }}",
+              "value": "={{ $('Code in JavaScript').json.user_id }}",
               "type": "string"
             },
             {
               "id": "hid",
               "name": "habit_id",
-              "value": "={{ $node['Separar em Itens'].json.habit_id }}",
+              "value": "={{ $('Code in JavaScript').json.habit_id }}",
               "type": "string"
             },
             {
               "id": "wpp",
               "name": "whatsapp",
-              "value": "={{ $node['Separar em Itens'].json.whatsapp }}",
+              "value": "={{ $('Code in JavaScript').json.whatsapp }}",
               "type": "string"
             },
             {
               "id": "ptk",
               "name": "push_token",
-              "value": "={{ $node['Separar em Itens'].json.push_token }}",
-              "type": "string"
+              "value": "={{ $('Code in JavaScript').json.push_token }}",
+              "type": "any"
             },
             {
               "id": "can",
               "name": "canais",
-              "value": "={{ $node['Separar em Itens'].json.canais }}",
+              "value": "={{ $('Code in JavaScript').json.canais }}",
               "type": "array"
             },
             {
               "id": "hab",
               "name": "nome_habito",
-              "value": "={{ $node['Separar em Itens'].json.nome_habito }}",
+              "value": "={{ $('Code in JavaScript').json.nome_habito }}",
               "type": "string"
             },
             {
               "id": "sid",
               "name": "schedule_id",
-              "value": "={{ $node['Separar em Itens'].json.schedule_id }}",
+              "value": "={{ $('Code in JavaScript').json.schedule_id }}",
               "type": "string"
             },
             {
               "id": "snz",
               "name": "snooze_id",
-              "value": "={{ $node['Separar em Itens'].json.snooze_id }}",
+              "value": "={{ $('Code in JavaScript').json.snooze_id }}",
               "type": "string"
             },
             {
               "id": "dt",
               "name": "data",
-              "value": "={{ $node['Separar em Itens'].json.data }}",
+              "value": "={{ $('Code in JavaScript').json.data }}",
               "type": "string"
             },
             {
               "id": "src",
               "name": "source",
-              "value": "={{ $node['Separar em Itens'].json.source }}",
+              "value": "={{ $('Code in JavaScript').json.source }}",
               "type": "string"
             },
             {
               "id": "cat",
               "name": "categoria",
-              "value": "={{ $node['Separar em Itens'].json.categoria }}",
+              "value": "={{ $('Code in JavaScript').json.categoria }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "extrair-mensagem",
+      "id": "f6b72606-1f29-473c-a184-43f2ac3df0e2",
       "name": "Extrair Mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1100,
-        300
+        -192,
+        1968
       ]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
             {
-              "value1": "={{ $json.whatsapp }}",
-              "operation": "isNotEmpty"
+              "id": "wpp-notempty",
+              "leftValue": "={{ $json.whatsapp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "wpp-canal",
+              "leftValue": "={{ $json.canais.includes('whatsapp') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
-          "boolean": [
-            {
-              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('whatsapp') }}",
-              "value2": true
-            }
-          ]
+          "combinator": "and"
         },
-        "combineOperation": "all"
+        "options": {}
       },
-      "id": "if-whatsapp",
+      "id": "0960d5d3-e2df-4515-8f03-f22cf93c205c",
       "name": "Tem WhatsApp?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1320,
-        180
+        16,
+        1840
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.EVOLUTION_URL }}/message/sendText/{{ $node['Variaveis de Ambiente'].json.EVOLUTION_INSTANCE }}",
+        "url": "={{ $('Variaveis de Ambiente').first().json.EVOLUTION_URL + '/message/sendText/' + $('Variaveis de Ambiente').first().json.EVOLUTION_INSTANCE }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.EVOLUTION_API_KEY }}"
+              "value": "={{ $('Variaveis de Ambiente').first().json.EVOLUTION_API_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -288,55 +303,65 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $json.whatsapp }}\",\n  \"text\": \"🌱 *{{ $json.nome_habito }}*\\n\\n{{ $json.message }}\"\n}",
+        "jsonBody": "={{ { number: $json.whatsapp, text: `🌱 *${$json.nome_habito}*\\n\\n${$json.message}` } }}",
         "options": {}
       },
-      "id": "send-whatsapp",
+      "id": "b04f1936-f4c2-4842-8e59-8b802472ac41",
       "name": "Enviar WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1540,
-        80
+        256,
+        1760
       ]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
             {
-              "value1": "={{ $json.push_token }}",
-              "operation": "isNotEmpty"
+              "id": "push-notempty",
+              "leftValue": "={{ $json.push_token?.endpoint }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
             }
           ],
-          "boolean": [
-            {
-              "value1": "={{ Array.isArray($json.canais) && $json.canais.includes('push') }}",
-              "value2": true
-            }
-          ]
+          "combineOperation": "all"
         },
-        "combineOperation": "all"
+        "options": {}
       },
-      "id": "if-push",
+      "id": "b802e732-a213-4853-a684-d23efa9a16df",
       "name": "Tem Push Token?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1320,
-        420
+        32,
+        2096
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/functions/v1/send-push",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/functions/v1/send-push",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -346,32 +371,32 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  subscription: typeof $json.push_token === 'string' ? JSON.parse($json.push_token) : $json.push_token,\n  payload: {\n    title: 'Streak Life',\n    body: $json.message,\n    data: {\n      url: '/',\n      habitId: $json.habit_id,\n      userId: $json.user_id,\n      date: $json.data\n    }\n  }\n}) }}",
+        "jsonBody": "={{ { subscription: $json.push_token, title: 'Streak Life 🌱', body: $json.message || '🌱 Hora do seu hábito!', payload: { data: { url: '/', habitId: $json.habit_id, userId: $json.user_id, date: $json.data } } } }}",
         "options": {}
       },
-      "id": "send-push",
+      "id": "2d861bce-65d6-4776-8853-01a1cf02c055",
       "name": "Enviar Web Push",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1540,
-        380
+        256,
+        2048
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminders_sent",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/rest/v1/reminders_sent",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -385,32 +410,33 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"schedule_id\": {{ $node['Extrair Mensagem'].json.schedule_id ? \"\\\"\" + $node['Extrair Mensagem'].json.schedule_id + \"\\\"\" : null }},\n  \"user_id\": \"{{ $node['Extrair Mensagem'].json.user_id }}\",\n  \"data\": \"{{ $node['Extrair Mensagem'].json.data }}\",\n  \"canal\": \"whatsapp\",\n  \"mensagem\": \"{{ $node['Extrair Mensagem'].json.message }}\"\n}",
+        "jsonBody": "={\n  \"schedule_id\": \"{{ $('Extrair Mensagem').json.schedule_id }}\",\n  \"user_id\": \"{{ $('Extrair Mensagem').json.user_id }}\",\n  \"data\": \"{{ $('Extrair Mensagem').json.data }}\",\n  \"canal\": \"whatsapp\",\n  \"mensagem\": \"{{ $('Extrair Mensagem').json.message }}\"\n}",
         "options": {}
       },
-      "id": "log-whatsapp-sent",
+      "id": "869b7c92-4094-4519-866e-15131dfc0839",
       "name": "Registrar WhatsApp Enviado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1760,
-        80
-      ]
+        480,
+        1760
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminders_sent",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/rest/v1/reminders_sent",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -424,32 +450,33 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"schedule_id\": {{ $node['Extrair Mensagem'].json.schedule_id ? \"\\\"\" + $node['Extrair Mensagem'].json.schedule_id + \"\\\"\" : null }},\n  \"user_id\": \"{{ $node['Extrair Mensagem'].json.user_id }}\",\n  \"data\": \"{{ $node['Extrair Mensagem'].json.data }}\",\n  \"canal\": \"push\",\n  \"mensagem\": \"{{ $node['Extrair Mensagem'].json.message }}\"\n}",
+        "jsonBody": "={\n  \"schedule_id\": {{ $('Extrair Mensagem').json.schedule_id ? '\"' + $('Extrair Mensagem').json.schedule_id + '\"' : null }},\n  \"user_id\": \"{{ $('Extrair Mensagem').json.user_id }}\",\n  \"data\": \"{{ $('Extrair Mensagem').json.data }}\",\n  \"canal\": \"push\",\n  \"mensagem\": \"{{ $('Extrair Mensagem').json.message }}\"\n}",
         "options": {}
       },
-      "id": "log-push-sent",
+      "id": "358d2b45-3924-408a-abc5-5537ab22a042",
       "name": "Registrar Push Enviado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1760,
-        380
-      ]
+        480,
+        2048
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $node['Extrair Mensagem'].json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $('Extrair Mensagem').json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -459,32 +486,33 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"delivered_at\": \"{{ $now.toISO() }}\"\n}",
+        "jsonBody": "={ \"delivered_at\": \"{{ $now.toISO() }}\" }",
         "options": {}
       },
-      "id": "mark-whatsapp-snooze-delivered",
+      "id": "ddfb2ff4-209b-4d96-bb5b-65804bb1f930",
       "name": "Marcar Adiamento WhatsApp Entregue",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1980,
-        80
-      ]
+        688,
+        1760
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $node['Extrair Mensagem'].json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
+        "url": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_URL }}/rest/v1/reminder_snoozes?id=eq.{{ $('Extrair Mensagem').json.snooze_id || '00000000-0000-0000-0000-000000000000' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $node['Variaveis de Ambiente'].json.SUPABASE_SERVICE_KEY }}"
+              "value": "={{ 'Bearer ' + $('Variaveis de Ambiente').first().json.SUPABASE_SERVICE_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -494,17 +522,18 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"delivered_at\": \"{{ $now.toISO() }}\"\n}",
+        "jsonBody": "={ \"delivered_at\": \"{{ $now.toISO() }}\" }",
         "options": {}
       },
-      "id": "mark-push-snooze-delivered",
+      "id": "611617a9-699f-4e39-9b12-10c45f3f7b3d",
       "name": "Marcar Adiamento Push Entregue",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1980,
-        380
-      ]
+        688,
+        2048
+      ],
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -534,14 +563,14 @@
       "main": [
         [
           {
-            "node": "Separar em Itens",
+            "node": "Code in JavaScript",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Separar em Itens": {
+    "Code in JavaScript": {
       "main": [
         [
           {
@@ -552,16 +581,27 @@
         ]
       ]
     },
+    "Gerar Lembrete (IA Unica)": {
+      "main": [
+        [
+          {
+            "node": "Extrair Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Extrair Mensagem": {
       "main": [
         [
           {
-            "node": "Tem WhatsApp?",
+            "node": "Tem Push Token?",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Tem Push Token?",
+            "node": "Tem WhatsApp?",
             "type": "main",
             "index": 0
           }
@@ -573,30 +613,6 @@
         [
           {
             "node": "Enviar WhatsApp",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Tem Push Token?": {
-      "main": [
-        [
-          {
-            "node": "Enviar Web Push",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Gerar Lembrete (IA Unica)": {
-      "main": [
-        [
-          {
-            "node": "Extrair Mensagem",
             "type": "main",
             "index": 0
           }
@@ -614,11 +630,11 @@
         ]
       ]
     },
-    "Registrar WhatsApp Enviado": {
+    "Tem Push Token?": {
       "main": [
         [
           {
-            "node": "Marcar Adiamento WhatsApp Entregue",
+            "node": "Enviar Web Push",
             "type": "main",
             "index": 0
           }
@@ -630,6 +646,17 @@
         [
           {
             "node": "Registrar Push Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar WhatsApp Enviado": {
+      "main": [
+        [
+          {
+            "node": "Marcar Adiamento WhatsApp Entregue",
             "type": "main",
             "index": 0
           }
@@ -648,7 +675,8 @@
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
+  "pinData": {},
+  "meta": {
+    "instanceId": "49cf833372d26e4001611b2ecc046ee03a1480383978cdf8a6ce05baadbef188"
   }
 }
