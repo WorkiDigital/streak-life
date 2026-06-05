@@ -3,6 +3,18 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          icons: ['lucide-react'],
+          dates: ['date-fns'],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -14,7 +26,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       },
       manifest: {
-        name: 'Streak Life — Hábitos de Saúde',
+        name: 'Streak Life - Hábitos de Saúde',
         short_name: 'Streak Life',
         description: 'Acompanhe seus hábitos de saúde com IA e mantenha o seu streak.',
         lang: 'pt-BR',

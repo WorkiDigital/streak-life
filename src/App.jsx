@@ -1,16 +1,22 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HabitsProvider } from './contexts/HabitsContext'
 import { ToastProvider } from './contexts/ToastContext'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AppLayout from './components/layout/AppLayout'
-import LoginPage from './pages/LoginPage'
-import OnboardingPage from './pages/OnboardingPage'
-import DashboardPage from './pages/DashboardPage'
-import HabitsPage from './pages/HabitsPage'
-import ChatPage from './pages/ChatPage'
-import ProgressPage from './pages/ProgressPage'
-import SettingsPage from './pages/SettingsPage'
+
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const HabitsPage = lazy(() => import('./pages/HabitsPage'))
+const ChatPage = lazy(() => import('./pages/ChatPage'))
+const ProgressPage = lazy(() => import('./pages/ProgressPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+
+function PageLoader() {
+  return <div className="page-loader" aria-label="Carregando" />
+}
 
 export default function App() {
   return (
@@ -18,38 +24,36 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <HabitsProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginPage />} />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Onboarding — needs auth but not full profile */}
-              <Route
-                path="/onboarding"
-                element={
-                  <ProtectedRoute>
-                    <OnboardingPage />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <OnboardingPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Protected app routes — needs auth + profile */}
-              <Route
-                element={
-                  <ProtectedRoute requireProfile>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/habits" element={<HabitsPage />} />
-                <Route path="/chat" element={<ChatPage />} />
-                <Route path="/progress" element={<ProgressPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route>
+                <Route
+                  element={
+                    <ProtectedRoute requireProfile>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/habits" element={<HabitsPage />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </HabitsProvider>
         </ToastProvider>
       </AuthProvider>
