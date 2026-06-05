@@ -57,6 +57,14 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function clearAuthFromSW() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.active?.postMessage({ type: 'CLEAR_SUPABASE_AUTH' })
+      })
+    }
+  }
+
   useEffect(() => {
     // Check active session on mount
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -71,7 +79,7 @@ export function AuthProvider({ children }) {
         setProfile(prof)
         sendAuthToSW(session, prof?.timezone)
       } else {
-        sendAuthToSW(session, null)
+        clearAuthFromSW()
       }
 
       setLoading(false)
@@ -92,7 +100,7 @@ export function AuthProvider({ children }) {
           sendAuthToSW(session, prof?.timezone)
         } else {
           setProfile(null)
-          sendAuthToSW(session, null)
+          clearAuthFromSW()
         }
 
         setLoading(false)
@@ -128,6 +136,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    clearAuthFromSW()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     setUser(null)
