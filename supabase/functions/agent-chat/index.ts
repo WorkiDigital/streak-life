@@ -285,33 +285,41 @@ serve(async (req: Request) => {
       content: item.content,
     }))
 
-    const syntheticPrompt = mode === 'onboarding'
-      ? `Voce esta no onboarding. Avalie a conversa e a ultima resposta do usuario.
+    // Instrucao de onboarding vai no systemInstruction, nao como mensagem de usuario
+    // (evita o Gemini interpretar como nova mensagem e repetir perguntas ja feitas)
+    const onboardingInstruction = mode === 'onboarding'
+      ? `\n\nINSTRUCAO DE ONBOARDING:
+Voce esta conduzindo o onboarding. Leia TODO o historico acima antes de responder.
+NUNCA repita uma pergunta que ja foi respondida no historico.
 
-Dados OBRIGATORIOS antes de emitir SETUP (todos precisam estar presentes):
-- idade, sexo, altura_cm, peso_kg, peso_meta_kg
-- horario_acordar, horario_dormir
-- nivel_atividade (sedentario, leve, moderado, alto)
-- treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino
-- horarios das refeicoes: cafe_da_manha, almoco, lanche_da_tarde, jantar
-- nivel_estresse
-- preferencias_alimentares (ex: comida simples, vegetariano, sem gluten, etc)
-- restricoes_alimentares (alergias, intolerâncias ou "nenhuma")
-- observacoes_saude (condicoes de saude relevantes, medicamentos em uso, ou "nenhuma")
-- tom_preferido (amigavel, direto ou motivacional)
-- triagem de seguranca concluida (sem sinais de risco alimentar)
+Dados OBRIGATORIOS antes de emitir SETUP (marque mentalmente quais ja foram respondidos):
+1. idade
+2. sexo
+3. altura_cm
+4. peso_kg
+5. peso_meta_kg
+6. nivel_atividade (sedentario, leve, moderado, alto)
+7. treina (sim/nao) — se sim: dias_treino, tipo_treino, horario_treino
+8. horario_acordar e horario_dormir
+9. horario cafe_da_manha, almoco, lanche_da_tarde, jantar
+10. nivel_estresse
+11. preferencias_alimentares
+12. restricoes_alimentares (ou "nenhuma")
+13. observacoes_saude / medicamentos (ou "nenhuma")
+14. tom_preferido (amigavel, direto ou motivacional)
+15. triagem de seguranca concluida (sem sinais de risco alimentar)
 
-Se QUALQUER desses ainda nao foi informado, faca SOMENTE a proxima pergunta pendente. Nao emita SETUP.
-Se TODOS estiverem presentes e nao houver sinal de risco, entregue o plano e emita o bloco SETUP.`
-      : 'Continue a conversa de forma util. Se a mensagem do usuario indicar conclusao, ajuste ou adiamento, emita o bloco invisivel adequado.'
+Regra: faca SOMENTE a proxima pergunta ainda nao respondida. Se TODOS estiverem presentes, entregue o plano e emita SETUP.`
+      : ''
+
+    const effectiveSystemPrompt = SYSTEM_PROMPT + onboardingInstruction
 
     const aiInput = [
       { role: 'user', content: buildContextPrompt(context) },
       ...history,
-      { role: 'user', content: syntheticPrompt },
     ]
 
-    const raw = await callGemini(SYSTEM_PROMPT, aiInput)
+    const raw = await callGemini(effectiveSystemPrompt, aiInput)
     let blocks = parseAgentBlocks(raw)
     let setupGeneratedInternally = false
 
@@ -344,10 +352,9 @@ Se todos estiverem presentes, responda SOMENTE com o bloco SETUP (sem texto fora
 - Use horarios HH:mm, dias_semana 0-6, canais ["push"] se sem WhatsApp
 `.trim()
 
-      const setupRaw = await callGemini(SYSTEM_PROMPT, [
+      const setupRaw = await callGemini(SYSTEM_PROMPT + '\n\nINSTRUCAO INTERNA: ' + setupOnlyPrompt, [
         { role: 'user', content: buildContextPrompt(context) },
         ...history,
-        { role: 'user', content: setupOnlyPrompt },
       ])
       const setupBlocks = parseAgentBlocks(setupRaw).filter((block) => block.type === 'SETUP')
       if (setupBlocks.length > 0) {
