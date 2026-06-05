@@ -142,31 +142,39 @@ export function HabitsProvider({ children }) {
   }, [user])
 
   // Mark a habit as done for a specific date, optionally with valor/nota
-  async function markDone(habitId, date = new Date(), { valor = null, nota = null } = {}) {
+  // For multi-schedule habits (totalHorarios > 1): increments a counter instead of marking all done
+  async function markDone(habitId, date = new Date(), { valor = null, nota = null, totalHorarios = 1 } = {}) {
     if (!user) return
 
     const dateStr = format(date, 'yyyy-MM-dd')
+    const isMulti = totalHorarios > 1
+
+    // For multi-schedule: compute next count
+    const existingLog = logs.find(l => l.habit_id === habitId && l.data === dateStr)
+    const currentCount = isMulti ? (parseInt(existingLog?.valor) || 0) : 0
+    const nextCount = currentCount + 1
+    const allDone = !isMulti || nextCount >= totalHorarios
+
+    const newValor = isMulti ? String(nextCount) : valor
+    const newStatus = allDone ? 'feito' : 'pendente'
 
     // Optimistic update
     const tempLog = {
-      id: `temp-${habitId}-${dateStr}`,
+      id: existingLog?.id ?? `temp-${habitId}-${dateStr}`,
       habit_id: habitId,
       user_id: user.id,
       data: dateStr,
-      status: 'feito',
-      valor,
-      nota,
+      status: newStatus,
+      valor: newValor,
+      nota: nota ?? existingLog?.nota ?? null,
       marcado_em: new Date().toISOString(),
     }
 
     setLogs(prev => {
-      const filtered = prev.filter(
-        l => !(l.habit_id === habitId && l.data === dateStr)
-      )
+      const filtered = prev.filter(l => !(l.habit_id === habitId && l.data === dateStr))
       return [...filtered, tempLog]
     })
 
-    // Upsert in database
     const { data, error } = await supabase
       .from('habit_logs')
       .upsert(
@@ -174,9 +182,9 @@ export function HabitsProvider({ children }) {
           habit_id: habitId,
           user_id: user.id,
           data: dateStr,
-          status: 'feito',
-          valor,
-          nota,
+          status: newStatus,
+          valor: newValor,
+          nota: nota ?? existingLog?.nota ?? null,
           marcado_em: new Date().toISOString(),
         },
         { onConflict: 'habit_id,user_id,data' }
@@ -185,7 +193,6 @@ export function HabitsProvider({ children }) {
       .single()
 
     if (error) {
-      console.error('Error marking habit done:', error)
       setLogs(prev => prev.filter(l => l.id !== tempLog.id))
       throw error
     }
@@ -241,11 +248,17 @@ export function HabitsProvider({ children }) {
       .map(item => {
         item.horarios.sort()
         const log = logs.find(l => l.habit_id === item.habit_id && l.data === todayStr)
+        const isMulti = item.horarios.length > 1
+        const status = log?.status === 'feito'
+          ? 'feito'
+          : (isMulti && log?.valor && parseInt(log.valor) > 0)
+            ? 'pendente'
+            : log?.status || 'pendente'
+
         return {
           ...item,
           log,
-          status: log?.status || 'pendente',
-          // horario kept as earliest for backward compat (HabitCard display)
+          status,
           horario: item.horarios[0],
         }
       })

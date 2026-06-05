@@ -18,6 +18,11 @@ export default function HabitCard({ schedule }) {
   const isDone = schedule.status === 'feito'
   const isMissed = schedule.status === 'nao_feito'
 
+  const totalHorarios = schedule.horarios?.length ?? 1
+  const isMulti = totalHorarios > 1
+  const currentCount = isMulti ? (parseInt(schedule.log?.valor) || 0) : 0
+  const allDone = isDone
+
   async function handleToggle() {
     if (saving) return
     setSaving(true)
@@ -25,6 +30,15 @@ export default function HabitCard({ schedule }) {
       if (isDone) {
         await undoMark(schedule.habit_id)
         toast.success('Hábito desmarcado')
+      } else if (isMulti) {
+        // Multi-horário: incrementa direto, sem mini-modal
+        setAnimating(true)
+        setTimeout(() => setAnimating(false), 600)
+        await markDone(schedule.habit_id, new Date(), { totalHorarios })
+        const next = currentCount + 1
+        if (next >= totalHorarios) {
+          toast.success(`${habit?.nome} completo! ✨`)
+        }
       } else {
         setAnimating(true)
         setShowExtra(true)
@@ -45,6 +59,7 @@ export default function HabitCard({ schedule }) {
       await markDone(schedule.habit_id, new Date(), {
         valor: valor.trim() || null,
         nota: nota.trim() || null,
+        totalHorarios,
       })
       toast.success(`${habit?.nome} marcado! ✨`)
     } catch (err) {
@@ -61,7 +76,7 @@ export default function HabitCard({ schedule }) {
   return (
     <>
       <div
-        className={`habit-card glass-card ${isDone ? 'done' : ''} ${isMissed ? 'missed' : ''} ${animating ? 'animate-burst' : ''}`}
+        className={`habit-card glass-card ${allDone ? 'done' : ''} ${isMissed ? 'missed' : ''} ${animating ? 'animate-burst' : ''}`}
       >
         <div className="habit-card-info">
           <span className="habit-card-icon">{habit?.icone || '📋'}</span>
@@ -69,38 +84,45 @@ export default function HabitCard({ schedule }) {
             <span className="habit-card-name">{habit?.nome || 'Hábito'}</span>
             <span className="habit-card-time text-xs text-secondary">
               <Clock size={12} />
-              {schedule.horarios?.length > 1
-                ? `${schedule.horarios[0]?.slice(0, 5)} … ${schedule.horarios[schedule.horarios.length - 1]?.slice(0, 5)} (${schedule.horarios.length}×)`
+              {isMulti
+                ? `${schedule.horarios[0]?.slice(0, 5)} … ${schedule.horarios[schedule.horarios.length - 1]?.slice(0, 5)} (${totalHorarios}×)`
                 : (schedule.horarios?.[0] || schedule.horario)?.slice(0, 5) || '--:--'}
             </span>
-            {isDone && schedule.log?.valor && (
+            {isMulti && !allDone && (
+              <span className="habit-card-progress text-xs text-secondary">
+                {currentCount}/{totalHorarios} {habit?.icone || '✓'}
+              </span>
+            )}
+            {!isMulti && isDone && schedule.log?.valor && (
               <span className="habit-card-valor text-xs text-secondary">{schedule.log.valor}</span>
             )}
           </div>
         </div>
 
         <button
-          className={`habit-card-btn ${isDone ? 'btn-done' : 'btn-pending'}`}
+          className={`habit-card-btn ${allDone ? 'btn-done' : 'btn-pending'}`}
           onClick={handleToggle}
           disabled={saving}
-          aria-label={isDone ? 'Desmarcar hábito' : 'Marcar como feito'}
+          aria-label={allDone ? 'Desmarcar hábito' : isMulti ? `Registrar (${currentCount}/${totalHorarios})` : 'Marcar como feito'}
           aria-busy={saving}
         >
           {saving ? (
             <Loader2 size={18} className="spin" />
-          ) : isDone ? (
+          ) : allDone ? (
             <>
               <Check size={18} />
               <span>Feito</span>
             </>
+          ) : isMulti ? (
+            <span>+1 ({currentCount}/{totalHorarios})</span>
           ) : (
             <span>Marcar ✓</span>
           )}
         </button>
       </div>
 
-      {/* Mini-modal de valor/nota */}
-      {showExtra && (
+      {/* Mini-modal de valor/nota — apenas para hábitos de horário fixo */}
+      {showExtra && !isMulti && (
         <div className="habit-extra-panel glass-card">
           <div className="habit-extra-header">
             <span className="text-sm font-semibold">Adicionar detalhe <span className="text-tertiary">(opcional)</span></span>
