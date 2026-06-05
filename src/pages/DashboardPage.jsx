@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Flame, Target, TrendingUp, Calendar } from 'lucide-react'
+import { Flame, Target, TrendingUp, Calendar, X } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
 import { useAuth } from '../contexts/AuthContext'
 import HabitCard from '../components/habits/HabitCard'
 import HabitHeatmap from '../components/habits/HabitHeatmap'
 import { useTodayNutrition } from '../hooks/useTodayNutrition'
+import NutritionSetupModal from '../components/nutrition/NutritionSetupModal'
+import '../components/nutrition/nutrition.css'
 import './DashboardPage.css'
+
+const BANNER_DISMISSED_KEY = 'nutrition_banner_dismissed'
 
 const PERIOD_OPTIONS = [
   { label: '7 dias', value: 7 },
@@ -16,9 +20,25 @@ const PERIOD_OPTIONS = [
 export default function DashboardPage() {
   const [period, setPeriod] = useState(30)
   const [confetti, setConfetti] = useState(false)
+  const [showSetupModal, setShowSetupModal] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => localStorage.getItem(BANNER_DISMISSED_KEY) === '1'
+  )
   const prevDoneCount = useRef(null)
-  const { getTodayHabits, getHeatmapData, getStats, loading, logs, schedules } = useHabits()
-  const { profile } = useAuth()
+  const { getTodayHabits, getHeatmapData, getStats, loading, logs, schedules, refreshData } = useHabits()
+  const { profile, refreshProfile } = useAuth()
+
+  function dismissBanner(e) {
+    e.stopPropagation()
+    localStorage.setItem(BANNER_DISMISSED_KEY, '1')
+    setBannerDismissed(true)
+  }
+
+  async function handlePlanApplied() {
+    await Promise.allSettled([refreshProfile(), refreshData()])
+  }
+
+  const showNutritionBanner = !profile?.nutrition_enabled && !bannerDismissed
   const today = new Date().toISOString().slice(0, 10)
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
@@ -78,6 +98,26 @@ export default function DashboardPage() {
         </div>
       )}
       <div className="container dashboard">
+
+        {/* Banner nutricional */}
+        {showNutritionBanner && (
+          <div
+            className="nutrition-banner"
+            onClick={() => setShowSetupModal(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && setShowSetupModal(true)}
+          >
+            <span className="nutrition-banner-icon">🥗</span>
+            <div className="nutrition-banner-text">
+              <div className="nutrition-banner-title">Organizar alimentação</div>
+              <div className="nutrition-banner-sub">A IA monta sugestões de refeições para sua rotina</div>
+            </div>
+            <button className="nutrition-banner-dismiss" onClick={dismissBanner} aria-label="Dispensar">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Today Section */}
         <section className="dashboard-section">
@@ -196,6 +236,13 @@ export default function DashboardPage() {
         </section>
 
       </div>
+
+      {showSetupModal && (
+        <NutritionSetupModal
+          onClose={() => setShowSetupModal(false)}
+          onApplied={handlePlanApplied}
+        />
+      )}
     </div>
   )
 }
