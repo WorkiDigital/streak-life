@@ -13,32 +13,19 @@ Sua função é montar um plano alimentar prático, seguro e aplicável com base
 REGRAS OBRIGATÓRIAS:
 - Não substitua nutricionista, médico ou psicólogo.
 - Não gere plano com gramas para menores de 18 anos.
-- Não gere plano com gramas para gestantes, lactantes, pessoas com doença relevante, uso de medicação contínua ou sinais de transtorno alimentar.
-- Não recomende dietas extremas, jejum extremo, detox, laxantes, diuréticos ou punição alimentar.
+- Não gere plano com gramas para gestantes, lactantes ou sinais de transtorno alimentar.
+- Não recomende dietas extremas, jejum extremo, detox, laxantes ou diuréticos.
 - Use quantidades aproximadas em faixas (ex: 130g a 160g).
 - Priorize alimentos simples e comuns no Brasil.
-- Explique de forma prática e acessível.
-- Gere refeições conectadas aos horários informados no perfil.
-- Use substituições simples.
-- Não crie metas agressivas.
+- Gere refeições nos horários informados no perfil.
 - SEMPRE inclua aviso de que não substitui acompanhamento profissional.
 
-CASOS SENSÍVEIS — retornar risk: true e não gerar plano com gramas:
-- idade < 18
-- gestante, grávida, lactante
-- transtorno alimentar (bulimia, anorexia, compulsão, purga)
-- uso de laxantes, diuréticos, jejum extremo
-- doença diagnosticada sem acompanhamento
-- baixo peso ou perda rápida de peso
-- meta agressiva (perder mais de 1kg/semana)
+FORMATO OBRIGATÓRIO:
+Retorne APENAS o JSON abaixo, sem markdown, sem texto antes ou depois, sem blocos de código:
 
-FORMATO OBRIGATÓRIO DA RESPOSTA:
-Retorne APENAS um bloco JSON válido no seguinte formato (sem markdown, sem texto extra):
-
-<!--NUTRITION_PLAN:{
+{
   "objetivo": "string",
   "observacoes_gerais": "string",
-  "aviso_seguranca": "Este plano é uma sugestão estimada para organização da rotina. Não substitui nutricionista, médico ou outro profissional de saúde.",
   "metas": {
     "proteina_g": number,
     "carboidrato_g": number,
@@ -63,8 +50,7 @@ Retorne APENAS um bloco JSON válido no seguinte formato (sem markdown, sem text
           "quantidade_min": number,
           "quantidade_max": number,
           "unidade": "string",
-          "grupo": "proteina|carboidrato|gordura|vegetal|fruta|laticinios|outro",
-          "observacao": "string opcional"
+          "grupo": "proteina|carboidrato|gordura|vegetal|fruta|laticinios|outro"
         }
       ],
       "substituicoes": [
@@ -75,7 +61,7 @@ Retorne APENAS um bloco JSON válido no seguinte formato (sem markdown, sem text
       ]
     }
   ]
-}-->`
+}`
 
 function hasNutritionRisk(perfil: Record<string, unknown>): { risk: boolean; reason: string } {
   const idade = Number(perfil.idade ?? 99)
@@ -171,17 +157,40 @@ Gere o plano alimentar no formato EXATO especificado. Inclua todas as 4 refeiç�
       { role: 'user', content: userPrompt },
     ])
 
-    // Parsear o bloco NUTRITION_PLAN
-    const match = raw.match(/<!--\s*NUTRITION_PLAN\s*:([\s\S]*?)-->/m)
-    if (!match) {
-      return jsonResponse({ error: 'IA não retornou plano nutricional válido' }, { status: 500 })
+    // Parser robusto: tenta JSON puro → extrai de bloco ```json``` → extrai primeiro { } de nível raiz
+    let planData: Record<string, unknown> | null = null
+
+    const candidates: string[] = []
+
+    // 1. JSON puro direto
+    candidates.push(raw.trim())
+
+    // 2. Dentro de bloco ```json ... ``` ou ``` ... ```
+    const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (codeBlock) candidates.push(codeBlock[1].trim())
+
+    // 3. Primeiro objeto JSON de nível raiz no texto
+    const firstBrace = raw.indexOf('{')
+    const lastBrace = raw.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      candidates.push(raw.slice(firstBrace, lastBrace + 1))
     }
 
-    let planData: Record<string, unknown>
-    try {
-      planData = JSON.parse(match[1].trim())
-    } catch {
-      return jsonResponse({ error: 'Plano nutricional com JSON inválido' }, { status: 500 })
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate)
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.refeicoes)) {
+          planData = parsed
+          break
+        }
+      } catch {
+        // tenta próximo
+      }
+    }
+
+    if (!planData) {
+      console.error('[nutrition-generate-plan] raw response:', raw.slice(0, 500))
+      return jsonResponse({ error: 'IA não retornou plano nutricional válido' }, { status: 500 })
     }
 
     return jsonResponse({ plan: planData, mode })
