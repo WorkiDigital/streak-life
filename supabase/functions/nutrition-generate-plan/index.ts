@@ -2,23 +2,18 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.107.0'
 import {
   CORS_HEADERS,
-  callGemini,
   jsonResponse,
 } from '../_shared/agent.ts'
 
 const NUTRITION_SYSTEM_PROMPT = `Você é uma IA especializada em nutrição comportamental e organização de rotina saudável.
 
-Sua função é montar um plano alimentar prático, seguro e aplicável com base nos dados fornecidos.
+Sua função é montar sugestões de refeições práticas e saudáveis com base nos dados fornecidos pelo usuário.
 
-REGRAS OBRIGATÓRIAS:
-- Não substitua nutricionista, médico ou psicólogo.
-- Não gere plano com gramas para menores de 18 anos.
-- Não gere plano com gramas para gestantes, lactantes ou sinais de transtorno alimentar.
-- Não recomende dietas extremas, jejum extremo, detox, laxantes ou diuréticos.
-- Use quantidades aproximadas em faixas (ex: 130g a 160g).
+REGRAS:
 - Priorize alimentos simples e comuns no Brasil.
-- Gere refeições nos horários informados no perfil.
-- SEMPRE inclua aviso de que não substitui acompanhamento profissional.
+- Use quantidades em faixas (ex: 130g a 160g).
+- Gere refeições nos horários informados.
+- Inclua observação de que as sugestões não substituem acompanhamento profissional.
 
 FORMATO OBRIGATÓRIO:
 Retorne APENAS o JSON abaixo, sem markdown, sem texto antes ou depois, sem blocos de código:
@@ -152,9 +147,40 @@ ${modeDesc}
 Gere o plano alimentar no formato EXATO especificado. Inclua todas as 4 refeições principais (café, almoço, lanche, jantar) nos horários informados.
 `.trim()
 
-    const raw = await callGemini(NUTRITION_SYSTEM_PROMPT, [
-      { role: 'user', content: userPrompt },
-    ])
+    // Usa callGemini direto com safetySettings mais permissivos para conteúdo de saúde/nutrição
+    const geminiKey = Deno.env.get('GEMINI_API_KEY') ?? ''
+    const geminiModel = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash'
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
+
+    const geminiRes = await fetch(`${geminiUrl}?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: NUTRITION_SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.7, topP: 0.9 },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+        ],
+      }),
+    })
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text()
+      console.error('[nutrition-generate-plan] Gemini error:', geminiRes.status, errText.slice(0, 500))
+      throw new Error(`Gemini API error: ${geminiRes.status}`)
+    }
+
+    const geminiData = await geminiRes.json()
+    console.error('[nutrition-generate-plan] finish_reason:', geminiData.candidates?.[0]?.finishReason)
+    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+    if (!raw) {
+      console.error('[nutrition-generate-plan] empty response, full:', JSON.stringify(geminiData).slice(0, 500))
+      throw new Error('Resposta vazia da IA')
+    }
 
     // Parser robusto: tenta JSON puro → extrai de bloco ```json``` → extrai primeiro { } de nível raiz
     let planData: Record<string, unknown> | null = null
@@ -195,7 +221,8 @@ Gere o plano alimentar no formato EXATO especificado. Inclua todas as 4 refeiç�
     return jsonResponse({ plan: planData, mode })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[nutrition-generate-plan]', message)
+    const stack = err instanceof Error ? err.stack : ''
+    console.error('[nutrition-generate-plan] ERRO:', message, stack)
     return jsonResponse({ error: message }, { status: 500 })
   }
 })
