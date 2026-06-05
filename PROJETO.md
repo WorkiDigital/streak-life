@@ -111,6 +111,41 @@
 
 ---
 
+## Atualização 2026-06-05 (sessão 2)
+
+### Commits
+- `3498eb8` - chip de intervalo corrigido + sync assíncrono ao editar hábito
+- `1ed14bc` - contador de progresso para hábitos com múltiplos horários (+1 por clique)
+- `ef5d6f3` - horário `08:00:00` → `08:00` e contador inválido ignorado
+- `0f7f95d` - heatmap usa `created_at` correto (dias antes do cadastro ficam cinza)
+- `e2350ff` - ícone PWA substituído (raio roxo → muda verde Streak Life)
+- `af03473` - melhorias onboarding, HabitsContext refatorado
+- `32c55d7` - botões canal mobile: `touch-action: manipulation` + sem `disabled`
+- `28ed1dc` - fix definitivo canais: `parseCanais()` converte string PostgreSQL `{push,whatsapp}` para array JS; CSS `.channel-toggle.active` movido para `SettingsPage.css`
+
+### Funcionalidades novas
+- **Hábitos com múltiplos horários (ex: Água 7×):** botão `+1 (3/7)` incrementa contador, vira `✓ Feito` no último clique. Progresso exibido abaixo do nome. Hábito de 1 horário mantém comportamento original.
+- **Canais globais (Push/WhatsApp):** seleção movida para Configurações como preferência global. HabitForm e HabitsContext usam `profile.canais_preferidos` como default.
+- **Heatmap:** dias anteriores à criação do hábito sempre cinza (não vermelho).
+- **HabitForm:** chip de intervalo sempre tem uma opção selecionada; sync com schedules assíncrono via `useEffect`; `inicio`/`fim` usam `horario_acordar`/`horario_dormir` do perfil.
+- **Ícone PWA:** muda verde com fundo escuro em todos os tamanhos (72–512px).
+
+### Bugs corrigidos
+- String PostgreSQL `{push,whatsapp}` não convertida para array JS → botões de canal nunca ficavam verdes.
+- CSS `.channel-toggle.active` estava em `HabitForm.css` que não era importado em `SettingsPage`.
+- Horário exibido como `08:00:00` em vez de `08:00` no card.
+- `schedules` carregava após montagem do HabitForm, inicializando com valores errados na edição.
+- Heatmap mostrava vermelho para dias antes do cadastro do hábito.
+
+### Canais de notificação — modelo atual
+- `profiles.canais_preferidos TEXT[]` com default `{push,whatsapp}`
+- Migration: `20260605_add_canais_preferidos.sql`
+- `parseCanais()` em `SettingsPage.jsx` normaliza string PostgreSQL para array JS
+- Toggle em Configurações salva via `updateProfile({ canais_preferidos: next })`
+- Hábitos novos herdam o canal do perfil; hábitos existentes mantêm o canal salvo no schedule
+
+---
+
 ## Atualização recente - push, n8n, heatmap e onboarding
 
 ### Commits recentes adicionados
