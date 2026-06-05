@@ -307,8 +307,8 @@ Se TODOS estiverem presentes e nao houver sinal de risco, entregue o plano e emi
 
     const aiInput = [
       { role: 'user', content: buildContextPrompt(context) },
-      { role: 'user', content: syntheticPrompt },
       ...history,
+      { role: 'user', content: syntheticPrompt },
     ]
 
     const raw = await callGemini(SYSTEM_PROMPT, aiInput)
