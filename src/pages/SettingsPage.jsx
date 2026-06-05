@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+
+function parseCanais(val) {
+  if (Array.isArray(val)) return val
+  if (typeof val === 'string' && val.length > 0) {
+    return val.replace(/[{}]/g, '').split(',').map(s => s.trim()).filter(Boolean)
+  }
+  return ['push', 'whatsapp']
+}
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -180,7 +188,7 @@ export default function SettingsPage() {
   const [savingPush, setSavingPush] = useState(false)
   const [silentMode, setSilentMode] = useState(Boolean(profile?.silent_mode))
   const [silentSaving, setSilentSaving] = useState(false)
-  const [canaisPreferidos, setCanaisPreferidos] = useState(profile?.canais_preferidos ?? ['push', 'whatsapp'])
+  const [canaisPreferidos, setCanaisPreferidos] = useState(() => parseCanais(profile?.canais_preferidos))
   const [canaisSaving, setCanaisSaving] = useState(false)
   const [lightMode, setLightMode] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'light'
@@ -189,7 +197,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setProfileForm(buildProfileForm(profile))
     setSilentMode(Boolean(profile?.silent_mode))
-    setCanaisPreferidos(profile?.canais_preferidos ?? ['push', 'whatsapp'])
+    setCanaisPreferidos(parseCanais(profile?.canais_preferidos))
   }, [profile])
 
   const summary = useMemo(() => ([

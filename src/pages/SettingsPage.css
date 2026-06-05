@@ -1,3 +1,26 @@
+.channel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.channel-toggle.active {
+  border-color: var(--color-accent);
+  background: var(--color-done-subtle);
+  color: var(--color-done);
+}
+
 .settings-page {
   display: flex;
   flex-direction: column;
