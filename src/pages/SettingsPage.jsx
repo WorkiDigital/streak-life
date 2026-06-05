@@ -193,6 +193,7 @@ export default function SettingsPage() {
   const [lightMode, setLightMode] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'light'
   )
+  const [nutritionSaving, setNutritionSaving] = useState(false)
 
   useEffect(() => {
     setProfileForm(buildProfileForm(profile))
@@ -294,6 +295,33 @@ export default function SettingsPage() {
       toast.error(error.message || 'Erro ao salvar perfil')
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  async function handleNutritionToggle() {
+    if (nutritionSaving) return
+    setNutritionSaving(true)
+    try {
+      const next = !profile?.nutrition_enabled
+      await updateProfile({ nutrition_enabled: next })
+      toast.success(next ? 'Plano alimentar ativado' : 'Plano alimentar pausado')
+    } catch {
+      toast.error('Erro ao atualizar plano alimentar')
+    } finally {
+      setNutritionSaving(false)
+    }
+  }
+
+  async function handleNutritionModeChange(mode) {
+    if (nutritionSaving) return
+    setNutritionSaving(true)
+    try {
+      await updateProfile({ nutrition_mode: mode })
+      toast.success('Modo do plano atualizado')
+    } catch {
+      toast.error('Erro ao atualizar modo')
+    } finally {
+      setNutritionSaving(false)
     }
   }
 
@@ -634,6 +662,44 @@ export default function SettingsPage() {
             <p className="settings-health-note">
               Streak Life nao substitui profissionais de saude. Em caso de relacao dificil com comida ou corpo, procure um nutricionista, medico ou psicologo.
             </p>
+          </div>
+        </section>
+
+        {/* Plano Alimentar */}
+        <section className="settings-section">
+          <h2 className="settings-section-title">🥗 Plano Alimentar</h2>
+          <div className="glass-card" style={{ overflow: 'hidden' }}>
+            <div className={`settings-row ${nutritionSaving ? 'settings-row-disabled' : ''}`} onClick={handleNutritionToggle}>
+              <div className="settings-row-info">
+                <span className="settings-row-label">Plano alimentar ativo</span>
+                <span className="settings-row-desc">
+                  {profile?.nutrition_enabled ? 'Cards de refeição aparecem no Início' : 'Desativado — apenas hábitos e lembretes'}
+                </span>
+              </div>
+              <div className={`toggle-switch ${profile?.nutrition_enabled ? 'on' : ''}`} aria-busy={nutritionSaving} />
+            </div>
+
+            {profile?.nutrition_enabled && (
+              <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                <span className="settings-row-label">Nível de detalhe</span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[
+                    { v: 'simples', l: 'Simples' },
+                    { v: 'detalhado', l: 'Detalhado' },
+                    { v: 'profissional', l: 'Profissional' },
+                  ].map(m => (
+                    <button
+                      key={m.v}
+                      className={`channel-toggle ${profile?.nutrition_mode === m.v ? 'active' : ''}`}
+                      onClick={() => handleNutritionModeChange(m.v)}
+                      disabled={nutritionSaving}
+                    >
+                      {m.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

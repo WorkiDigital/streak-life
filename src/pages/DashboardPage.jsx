@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Flame, Target, TrendingUp, Calendar } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
+import { useAuth } from '../contexts/AuthContext'
 import HabitCard from '../components/habits/HabitCard'
 import HabitHeatmap from '../components/habits/HabitHeatmap'
+import { useTodayNutrition } from '../hooks/useTodayNutrition'
 import './DashboardPage.css'
 
 const PERIOD_OPTIONS = [
@@ -16,6 +18,18 @@ export default function DashboardPage() {
   const [confetti, setConfetti] = useState(false)
   const prevDoneCount = useRef(null)
   const { getTodayHabits, getHeatmapData, getStats, loading, logs, schedules } = useHabits()
+  const { profile } = useAuth()
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
+    profile?.nutrition_enabled ? today : null
+  )
+  const nutritionMealsMap = useMemo(() => {
+    const map = {}
+    for (const meal of nutritionData?.meals ?? []) {
+      map[meal.id] = meal
+    }
+    return map
+  }, [nutritionData])
 
   // Memoize expensive calculations — only recompute when underlying data changes
   const todayHabits = useMemo(() => getTodayHabits(), [logs, schedules]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -111,9 +125,19 @@ export default function DashboardPage() {
                 </a>
               </div>
             ) : (
-              todayHabits.map(schedule => (
-                <HabitCard key={schedule.id} schedule={schedule} />
-              ))
+              todayHabits.map(schedule => {
+                const mealId = schedule.habit?.nutrition_meal_id
+                const nutritionMeal = mealId ? nutritionMealsMap[mealId] : null
+                return (
+                  <HabitCard
+                    key={schedule.id}
+                    schedule={schedule}
+                    nutritionMeal={nutritionMeal}
+                    nutritionMode={profile?.nutrition_mode ?? 'simples'}
+                    onNutritionLogged={refreshNutrition}
+                  />
+                )
+              })
             )}
           </div>
         </section>

@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useHabits } from '../contexts/HabitsContext'
 import { useToast } from '../contexts/ToastContext'
+import NutritionPlanPreview from '../components/nutrition/NutritionPlanPreview'
+import { generateNutritionPlan, applyNutritionPlan } from '../services/nutritionService'
 import './OnboardingPage.css'
 
 const DAYS_LABEL = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
@@ -13,6 +15,18 @@ const CATEGORY_ICONS = {
   hidratacao: '💧', treino: '🏋️', alimentacao: '🍽️', tela: '👀',
   sono: '🌙', meditacao: '🧘', leitura: '📚', medicamento: '💊',
   ar_livre: '☀️', autocuidado: '✨', alongamento: '🤸', outro: '📋',
+}
+
+const RISK_WORDS = [
+  'gestante', 'grávida', 'gravida', 'lactante', 'amamentando',
+  'bulimia', 'anorexia', 'compulsão', 'compulsao', 'purga',
+  'laxante', 'diurético', 'diuretico', 'transtorno alimentar',
+]
+
+function hasNutritionRisk(form) {
+  if (Number(form.idade) < 18) return true
+  const txt = [form.observacoes_saude, form.restricoes_alimentares].join(' ').toLowerCase()
+  return RISK_WORDS.some(w => txt.includes(w))
 }
 
 function StepIndicator({ current, total }) {
@@ -278,13 +292,76 @@ function Step4({ data, onChange }) {
   )
 }
 
+// ── Step 4b: Quer plano alimentar? ─────────────────────────────────────────
+function Step4b({ data, onChange }) {
+  return (
+    <div className="ob-step-body">
+      <h2 className="ob-step-title">Plano alimentar</h2>
+      <p className="ob-step-subtitle">A IA pode montar uma sugestão de refeições para sua rotina, com horários, porções e substituições.</p>
+
+      <div className="ob-objetivo-grid" style={{ gridTemplateColumns: '1fr' }}>
+        <button
+          type="button"
+          className={`ob-objetivo-card ${data.nutrition_enabled === true ? 'active' : ''}`}
+          onClick={() => onChange('nutrition_enabled', true)}
+        >
+          <span className="ob-objetivo-label">🥗 Sim, quero plano alimentar</span>
+          <span className="ob-objetivo-desc">A IA monta refeições personalizadas com horários e sugestões de alimentos.</span>
+        </button>
+        <button
+          type="button"
+          className={`ob-objetivo-card ${data.nutrition_enabled === false ? 'active' : ''}`}
+          onClick={() => onChange('nutrition_enabled', false)}
+        >
+          <span className="ob-objetivo-label">🌱 Não, só quero hábitos e lembretes</span>
+          <span className="ob-objetivo-desc">Continua com hábitos, água, treino e rotina. Sem plano alimentar detalhado.</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 4c: Nível de detalhe ──────────────────────────────────────────────
+function Step4c({ data, onChange }) {
+  const modes = [
+    { v: 'simples', label: '🟢 Simples', desc: 'Sugestões por refeição sem gramas. "Uma fonte de proteína, um carboidrato, legumes."' },
+    { v: 'detalhado', label: '🔵 Detalhado', desc: 'Sugestões com quantidades aproximadas em faixas. Ex: "Frango: 130g a 160g."' },
+    { v: 'profissional', label: '⚡ Profissional', desc: 'Macros, gramas, substituições e observações técnicas por refeição.' },
+  ]
+
+  return (
+    <div className="ob-step-body">
+      <h2 className="ob-step-title">Nível de detalhe</h2>
+      <p className="ob-step-subtitle">Qual nível de informação você prefere no seu plano?</p>
+
+      <div className="ob-objetivo-grid" style={{ gridTemplateColumns: '1fr' }}>
+        {modes.map(m => (
+          <button
+            key={m.v}
+            type="button"
+            className={`ob-objetivo-card ${data.nutrition_mode === m.v ? 'active' : ''}`}
+            onClick={() => onChange('nutrition_mode', m.v)}
+          >
+            <span className="ob-objetivo-label">{m.label}</span>
+            <span className="ob-objetivo-desc">{m.desc}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Step 5: Loading ────────────────────────────────────────────────────────
-function Step5() {
+function Step5({ withNutrition }) {
   return (
     <div className="ob-step-body ob-loading-body">
       <div className="ob-loading-icon">🧬</div>
       <h2 className="ob-step-title">Montando seu plano...</h2>
-      <p className="ob-step-subtitle">A IA está analisando seu perfil e criando um plano personalizado para você.</p>
+      <p className="ob-step-subtitle">
+        {withNutrition
+          ? 'A IA está analisando seu perfil, criando seus hábitos e montando seu plano alimentar.'
+          : 'A IA está analisando seu perfil e criando um plano personalizado para você.'}
+      </p>
       <Loader2 size={32} className="spin ob-spinner" />
     </div>
   )
@@ -359,7 +436,7 @@ function HabitReviewCard({ lembrete, index, onChange, onRemove }) {
   )
 }
 
-function Step6({ perfil, lembretes, onChange, onRemove }) {
+function Step6({ perfil, lembretes, onChange, onRemove, nutritionPlan, nutritionMode }) {
   const alimentacao = lembretes.filter(l => l.categoria === 'alimentacao')
   const outros = lembretes.filter(l => l.categoria !== 'alimentacao')
 
@@ -388,7 +465,14 @@ function Step6({ perfil, lembretes, onChange, onRemove }) {
         )}
       </div>
 
-      {alimentacao.length > 0 && (
+      {/* Plano nutricional gerado */}
+      {nutritionPlan && (
+        <div className="ob-section">
+          <NutritionPlanPreview plan={nutritionPlan} mode={nutritionMode} />
+        </div>
+      )}
+
+      {alimentacao.length > 0 && !nutritionPlan && (
         <div className="ob-section">
           <h3 className="ob-section-title">🍽️ Plano alimentar</h3>
           {alimentacao.map((l) => {
@@ -399,7 +483,7 @@ function Step6({ perfil, lembretes, onChange, onRemove }) {
       )}
 
       <div className="ob-section">
-        <h3 className="ob-section-title">🌱 Outros hábitos</h3>
+        <h3 className="ob-section-title">🌱 Hábitos e lembretes</h3>
         {outros.map((l) => {
           const realIndex = lembretes.indexOf(l)
           return <HabitReviewCard key={realIndex} lembrete={l} index={realIndex} onChange={onChange} onRemove={onRemove} />
@@ -410,7 +494,10 @@ function Step6({ perfil, lembretes, onChange, onRemove }) {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
-const TOTAL_STEPS = 6
+// Steps: 0=dados, 1=rotina, 2=treino, 3=saúde, 4b=nutrição?, 4c=modo, 5=loading, 6=revisão
+// Mapeamento de step lógico para índice visual:
+// 0,1,2,3 → normal; nutrition_enabled=true → +4b(4), +4c(5); loading=6; revisão=7
+// nutrition_enabled=false → pula 4b/4c; loading=4; revisão=5
 
 const defaultForm = {
   nome: '', idade: '', sexo: '', altura_cm: '', peso_kg: '', peso_meta_kg: '',
@@ -420,6 +507,8 @@ const defaultForm = {
   objetivo: '', nivel_atividade: '', nivel_estresse: '',
   preferencias_chips: [], restricoes_alimentares: '', observacoes_saude: '',
   tom_preferido: 'amigavel',
+  nutrition_enabled: null,
+  nutrition_mode: 'detalhado',
 }
 
 function isAdultAge(value) {
@@ -427,19 +516,34 @@ function isAdultAge(value) {
   return Number.isFinite(age) && age >= 18
 }
 
-function canAdvance(step, form) {
-  if (step === 0) return form.nome.trim() && isAdultAge(form.idade) && form.sexo && form.altura_cm && form.peso_kg && form.peso_meta_kg
-  if (step === 1) return form.horario_acordar && form.horario_dormir
-  if (step === 2) return form.treina !== null
-  if (step === 3) return form.objetivo && form.nivel_atividade && form.nivel_estresse
+// Sequência de steps baseada na escolha de nutrição
+function getStepSequence(form) {
+  // null = ainda não respondeu
+  if (form.nutrition_enabled === true) {
+    return ['dados', 'rotina', 'treino', 'saude', 'nutricao_escolha', 'nutricao_modo', 'loading', 'revisao']
+  }
+  if (form.nutrition_enabled === false) {
+    return ['dados', 'rotina', 'treino', 'saude', 'nutricao_escolha', 'loading', 'revisao']
+  }
+  return ['dados', 'rotina', 'treino', 'saude', 'nutricao_escolha', 'loading', 'revisao']
+}
+
+function canAdvance(stepName, form) {
+  if (stepName === 'dados') return form.nome.trim() && isAdultAge(form.idade) && form.sexo && form.altura_cm && form.peso_kg && form.peso_meta_kg
+  if (stepName === 'rotina') return form.horario_acordar && form.horario_dormir
+  if (stepName === 'treino') return form.treina !== null
+  if (stepName === 'saude') return form.objetivo && form.nivel_atividade && form.nivel_estresse
+  if (stepName === 'nutricao_escolha') return form.nutrition_enabled !== null
+  if (stepName === 'nutricao_modo') return !!form.nutrition_mode
   return true
 }
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState(0)
+  const [stepIdx, setStepIdx] = useState(0)
   const [form, setForm] = useState(defaultForm)
   const [lembretes, setLembretes] = useState([])
   const [planPerfil, setPlanPerfil] = useState(null)
+  const [nutritionPlan, setNutritionPlan] = useState(null)
   const [riskFlag, setRiskFlag] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
@@ -448,12 +552,38 @@ export default function OnboardingPage() {
   const toast = useToast()
   const navigate = useNavigate()
 
+  const sequence = getStepSequence(form)
+  const currentStepName = sequence[stepIdx] ?? 'revisao'
+  const totalDots = sequence.length - 2 // esconde loading e revisão dos dots
+
   function updateForm(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
+  function handleNext() {
+    const nextName = sequence[stepIdx + 1]
+    if (nextName === 'loading') {
+      generatePlan()
+      return
+    }
+    // Se mudou nutrition_enabled, recalcular sequência
+    const newSeq = getStepSequence(form)
+    const nextInNewSeq = newSeq[stepIdx + 1]
+    if (nextInNewSeq === 'loading') {
+      generatePlan()
+      return
+    }
+    setStepIdx(s => s + 1)
+  }
+
+  function handleBack() {
+    setStepIdx(s => Math.max(0, s - 1))
+  }
+
   async function generatePlan() {
-    setStep(4) // loading screen
+    const loadingIdx = sequence.indexOf('loading')
+    setStepIdx(loadingIdx)
+
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData?.session?.access_token
@@ -471,6 +601,10 @@ export default function OnboardingPage() {
         peso_meta_kg: Number(form.peso_meta_kg),
         horario_acordar: form.horario_acordar,
         horario_dormir: form.horario_dormir,
+        horario_cafe: form.refeicoes.cafe,
+        horario_almoco: form.refeicoes.almoco,
+        horario_lanche: form.refeicoes.lanche,
+        horario_jantar: form.refeicoes.jantar,
         horarios_refeicoes: form.refeicoes,
         treina: form.treina === true,
         dias_treino: form.treina ? Number(form.dias_treino) : null,
@@ -486,6 +620,7 @@ export default function OnboardingPage() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Fortaleza',
       }
 
+      // Gerar hábitos (agent-chat setup_only)
       const { data, error } = await supabase.functions.invoke('agent-chat', {
         headers: { Authorization: `Bearer ${token}` },
         body: { mode: 'setup_only', perfil: perfilPayload },
@@ -494,7 +629,6 @@ export default function OnboardingPage() {
       if (error) throw error
       if (data?.risk) {
         setRiskFlag(true)
-        setStep(4)
         return
       }
 
@@ -503,10 +637,24 @@ export default function OnboardingPage() {
 
       setPlanPerfil(setup.perfil ?? perfilPayload)
       setLembretes(setup.lembretes.map(l => ({ ...l, ativo: l.ativo !== false })))
-      setStep(5) // revisão
+
+      // Gerar plano nutricional em paralelo (se solicitado e sem risco)
+      if (form.nutrition_enabled === true && !hasNutritionRisk(form)) {
+        try {
+          const nutRes = await generateNutritionPlan(perfilPayload, form.nutrition_mode)
+          if (nutRes?.plan && !nutRes?.risk) {
+            setNutritionPlan(nutRes.plan)
+          }
+        } catch {
+          // Falha silenciosa — continua sem plano nutricional
+        }
+      }
+
+      const revisaoIdx = sequence.indexOf('revisao')
+      setStepIdx(revisaoIdx)
     } catch (err) {
       toast.error(err.message || 'Erro ao gerar plano')
-      setStep(3)
+      setStepIdx(3)
     }
   }
 
@@ -518,11 +666,21 @@ export default function OnboardingPage() {
       const token = sessionData?.session?.access_token
       if (!token) throw new Error('Sessão expirada')
 
+      // Aplicar hábitos
       const { error } = await supabase.functions.invoke('agent-apply', {
         headers: { Authorization: `Bearer ${token}` },
         body: { perfil: planPerfil, lembretes },
       })
       if (error) throw error
+
+      // Aplicar plano nutricional se gerado
+      if (nutritionPlan) {
+        try {
+          await applyNutritionPlan(nutritionPlan, form.nutrition_mode)
+        } catch {
+          // Continua mesmo se o plano nutricional falhar
+        }
+      }
 
       await Promise.allSettled([refreshProfile(), refreshData()])
       toast.success('Plano ativado! Seus lembretes estão prontos. 🌱')
@@ -542,48 +700,54 @@ export default function OnboardingPage() {
     setLembretes(prev => prev.filter((_, i) => i !== index))
   }
 
-  function handleNext() {
-    if (step === 3) { generatePlan(); return }
-    setStep(s => s + 1)
-  }
+  const isLoading = currentStepName === 'loading'
+  const isReview = currentStepName === 'revisao'
+  const showBack = stepIdx > 0 && !isLoading && !isReview && !riskFlag
+  const showNext = !isLoading && !isReview && !riskFlag
 
-  const steps = [
-    <Step1 data={form} onChange={updateForm} />,
-    <Step2 data={form} onChange={updateForm} />,
-    <Step3 data={form} onChange={updateForm} />,
-    <Step4 data={form} onChange={updateForm} />,
-    riskFlag
+  const stepComponents = {
+    dados: <Step1 data={form} onChange={updateForm} />,
+    rotina: <Step2 data={form} onChange={updateForm} />,
+    treino: <Step3 data={form} onChange={updateForm} />,
+    saude: <Step4 data={form} onChange={updateForm} />,
+    nutricao_escolha: <Step4b data={form} onChange={updateForm} />,
+    nutricao_modo: <Step4c data={form} onChange={updateForm} />,
+    loading: riskFlag
       ? (
         <div className="ob-step-body ob-loading-body">
           <div className="ob-loading-icon">💙</div>
           <h2 className="ob-step-title">Obrigado por compartilhar</h2>
-          <p className="ob-step-subtitle">Percebemos que você mencionou algumas situações que merecem atenção especial. O Streak Life não substitui acompanhamento profissional — te encorajamos a buscar apoio de um nutricionista ou psicólogo.</p>
-          <button className="btn btn-primary" onClick={() => { setRiskFlag(false); setStep(3) }}>Voltar e revisar</button>
+          <p className="ob-step-subtitle">Pelo que você informou, esse caso pede acompanhamento individualizado com um nutricionista e/ou médico. Para sua segurança, não vou montar um plano com quantidades específicas. Posso te ajudar com hábitos gerais de rotina.</p>
+          <button className="btn btn-primary" onClick={() => { setRiskFlag(false); setStepIdx(3) }}>Voltar e revisar</button>
         </div>
       )
-      : <Step5 />,
-    <Step6 perfil={planPerfil} lembretes={lembretes} onChange={handleLembreteChange} onRemove={handleLembreteRemove} />,
-  ]
-
-  const isLoading = step === 4 && !riskFlag
-  const isReview = step === 5
+      : <Step5 withNutrition={form.nutrition_enabled === true} />,
+    revisao: <Step6
+      perfil={planPerfil}
+      lembretes={lembretes}
+      onChange={handleLembreteChange}
+      onRemove={handleLembreteRemove}
+      nutritionPlan={nutritionPlan}
+      nutritionMode={form.nutrition_mode}
+    />,
+  }
 
   return (
     <div className="ob-shell">
       <div className="ob-card glass-card">
         <div className="ob-header">
           <span className="ob-brand">🌱 Streak Life</span>
-          <StepIndicator current={step} total={TOTAL_STEPS} />
+          <StepIndicator current={stepIdx} total={Math.min(totalDots, sequence.length)} />
         </div>
 
         <div className="ob-content">
-          {steps[step]}
+          {stepComponents[currentStepName]}
         </div>
 
-        {!isLoading && !riskFlag && (
+        {(showNext || isReview) && (
           <div className="ob-footer">
-            {step > 0 && step < 5 && (
-              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>
+            {showBack && (
+              <button className="btn btn-ghost" onClick={handleBack}>
                 <ChevronLeft size={18} /> Voltar
               </button>
             )}
@@ -603,9 +767,11 @@ export default function OnboardingPage() {
               <button
                 className="btn btn-primary"
                 onClick={handleNext}
-                disabled={!canAdvance(step, form)}
+                disabled={!canAdvance(currentStepName, form)}
               >
-                {step === 3 ? 'Gerar meu plano ✨' : 'Continuar'} <ChevronRight size={18} />
+                {currentStepName === 'nutricao_escolha' || currentStepName === 'nutricao_modo'
+                  ? 'Continuar' : currentStepName === 'saude'
+                  ? 'Gerar meu plano ✨' : 'Continuar'} <ChevronRight size={18} />
               </button>
             )}
           </div>

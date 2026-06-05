@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Check, Clock, X, Loader2 } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
 import { useToast } from '../../contexts/ToastContext'
+import NutritionMealCard from '../nutrition/NutritionMealCard'
 import './HabitCard.css'
 
-export default function HabitCard({ schedule }) {
+export default function HabitCard({ schedule, nutritionMeal = null, nutritionMode = 'simples', onNutritionLogged }) {
   const [animating, setAnimating] = useState(false)
   const [showExtra, setShowExtra] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -15,6 +16,7 @@ export default function HabitCard({ schedule }) {
   const toast = useToast()
 
   const habit = schedule.habit || schedule.habits
+  const hasNutrition = !!(habit?.nutrition_meal_id && nutritionMeal)
   const isDone = schedule.status === 'feito'
   const isMissed = schedule.status === 'nao_feito'
 
@@ -122,8 +124,17 @@ export default function HabitCard({ schedule }) {
         </button>
       </div>
 
-      {/* Mini-modal de detalhe/nota — apenas para hábitos de horário fixo */}
-      {showExtra && !isMulti && (
+      {/* Plano nutricional expansível — quando refeição vinculada existe */}
+      {hasNutrition && (
+        <NutritionMealCard
+          meal={{ ...nutritionMeal, log: schedule.log?.nutrition_meal_log ?? nutritionMeal.log }}
+          mode={nutritionMode}
+          onLogged={onNutritionLogged}
+        />
+      )}
+
+      {/* Mini-modal de valor/nota — apenas para hábitos de horário fixo sem nutrição */}
+      {showExtra && !isMulti && !hasNutrition && (
         <div className="habit-extra-panel glass-card">
           <div className="habit-extra-header">
             <span className="text-sm font-semibold">Adicionar detalhe <span className="text-tertiary">(opcional)</span></span>
