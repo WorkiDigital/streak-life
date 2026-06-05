@@ -241,7 +241,7 @@ export function HabitsProvider({ children }) {
       if (!grouped.has(s.habit_id)) {
         grouped.set(s.habit_id, { ...s, habit: s.habits, horarios: [] })
       }
-      grouped.get(s.habit_id).horarios.push(s.horario)
+      grouped.get(s.habit_id).horarios.push(s.horario?.slice(0, 5) ?? s.horario)
     }
 
     return Array.from(grouped.values())
@@ -249,9 +249,11 @@ export function HabitsProvider({ children }) {
         item.horarios.sort()
         const log = logs.find(l => l.habit_id === item.habit_id && l.data === todayStr)
         const isMulti = item.horarios.length > 1
+        const countVal = parseInt(log?.valor)
+        const validCount = isMulti && countVal > 0 && countVal <= item.horarios.length
         const status = log?.status === 'feito'
           ? 'feito'
-          : (isMulti && log?.valor && parseInt(log.valor) > 0)
+          : validCount
             ? 'pendente'
             : log?.status || 'pendente'
 

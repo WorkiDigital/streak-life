@@ -20,7 +20,8 @@ export default function HabitCard({ schedule }) {
 
   const totalHorarios = schedule.horarios?.length ?? 1
   const isMulti = totalHorarios > 1
-  const currentCount = isMulti ? (parseInt(schedule.log?.valor) || 0) : 0
+  const rawCount = parseInt(schedule.log?.valor)
+  const currentCount = isMulti && rawCount > 0 && rawCount <= totalHorarios ? rawCount : 0
   const allDone = isDone
 
   async function handleToggle() {
