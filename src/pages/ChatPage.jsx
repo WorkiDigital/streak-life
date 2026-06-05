@@ -56,13 +56,15 @@ export default function ChatPage({ onboardingMode = false }) {
       .from('chat_messages')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(200)
 
     if (error) {
       toast.error('Erro ao carregar conversa')
       console.error(error)
     } else {
-      setMessages(prev => showLoading ? (data || []) : mergeMessageList(prev, data || [], { dropTemps: true }))
+      const ordered = (data || []).reverse()
+      setMessages(prev => showLoading ? ordered : mergeMessageList(prev, ordered, { dropTemps: true }))
     }
     if (showLoading) setLoading(false)
   }

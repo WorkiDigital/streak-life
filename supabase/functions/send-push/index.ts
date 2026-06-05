@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.107.0'
 // @deno-types="npm:@types/web-push@3.6.3"
 import webpush from 'npm:web-push@3.6.7'
 
@@ -28,17 +29,54 @@ serve(async (req: Request) => {
       vapidConfigured = true
     }
 
-    const { subscription, title, body, habitId, userId } = await req.json()
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const isServiceRole = authHeader === `Bearer ${serviceKey}`
+
+    // Validate caller: either service role (n8n) or authenticated user
+    let callerUserId: string | null = null
+    if (isServiceRole) {
+      // n8n calling — trust userId from payload
+      callerUserId = null
+    } else {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      })
+      const { data: { user }, error } = await client.auth.getUser()
+      if (error || !user) return jsonResponse({ error: 'Nao autenticado' }, 401)
+      callerUserId = user.id
+    }
+
+    const reqBody = await req.json()
+    const subscription = reqBody.subscription
+    const payloadObj = reqBody.payload || {}
+
+    const title = reqBody.title ?? payloadObj.title ?? 'Streak Life 🌱'
+    const body = reqBody.body ?? payloadObj.body
+    const habitId = reqBody.habitId ?? payloadObj.habitId ?? payloadObj.data?.habitId ?? null
+    const userId = reqBody.userId ?? payloadObj.userId ?? payloadObj.data?.userId ?? null
+    const data = reqBody.data ?? payloadObj.data ?? {}
 
     if (!subscription?.endpoint || !body) {
       return jsonResponse({ error: 'subscription.endpoint e body sao obrigatorios' }, 400)
     }
 
+    // If called by a user (not service role), ensure they can only push to themselves
+    if (callerUserId && callerUserId !== userId) {
+      return jsonResponse({ error: 'Unauthorized' }, 403)
+    }
+
     const payload = JSON.stringify({
-      title: title ?? 'Streak Life 🌱',
+      title,
       body,
-      habitId: habitId ?? null,
-      userId: userId ?? null,
+      data: {
+        url: '/',
+        habitId,
+        userId,
+        ...data,
+      },
     })
 
     await webpush.sendNotification(subscription, payload)
