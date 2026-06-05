@@ -99,11 +99,11 @@ function prescribeHydration(pesoKg: number, nivelAtividade: string, wake: string
   return { litros, horarios }
 }
 
-function prescribeRefeicoes(wake: string, jantarHora: string) {
+function prescribeRefeicoes(wake: string, cafeHora: string | null, almocoHora: string | null, lancheHora: string | null, jantarHora: string) {
   return {
-    cafe: addMinutes(wake, 30),
-    almoco: '12:00',
-    lanche: '15:30',
+    cafe: cafeHora ?? addMinutes(wake, 30),
+    almoco: almocoHora ?? '12:00',
+    lanche: lancheHora ?? '15:30',
     jantar: jantarHora,
   }
 }
@@ -162,6 +162,9 @@ function buildFallbackSetup(context: any) {
   const wake = cleanClock(allText.match(/acord\w*\D{0,12}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '06:00'
   const treinoHora = cleanClock(allText.match(/trein\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '18:30'
   const jantarHora = cleanClock(allText.match(/jant\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '20:00'
+  const cafeHora = cleanClock(allText.match(/caf[eé]\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null)
+  const almocoHora = cleanClock(allText.match(/almo[cç]\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null)
+  const lancheHora = cleanClock(allText.match(/lanch\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null)
   const sleep = cleanClock(allText.match(/(?:durmo|dormir|sono)\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '23:00'
 
   const nivel_atividade = /sedentari/.test(allText) ? 'sedentario' : /moderad/.test(allText) ? 'moderado' : 'leve'
@@ -184,7 +187,7 @@ function buildFallbackSetup(context: any) {
   const hydrationStart = addMinutes(wake, 120)
   const hydrationEnd = addMinutes(jantarHora, -120)
   const { litros, horarios: aguaHorarios } = prescribeHydration(peso_kg, nivel_atividade, hydrationStart, hydrationEnd)
-  const refeicoes = prescribeRefeicoes(wake, jantarHora)
+  const refeicoes = prescribeRefeicoes(wake, cafeHora, almocoHora, lancheHora, jantarHora)
 
   return {
     perfil: {
@@ -286,7 +289,7 @@ Dados OBRIGATORIOS antes de emitir SETUP (todos precisam estar presentes):
 - idade, sexo, altura_cm, peso_kg, peso_meta_kg
 - horario_acordar, horario_dormir
 - treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino
-- horario_jantar
+- horarios das refeicoes: cafe_da_manha, almoco, lanche_da_tarde, jantar
 - nivel_estresse
 - triagem de seguranca concluida (sem sinais de risco alimentar)
 
