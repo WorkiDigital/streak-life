@@ -39,7 +39,8 @@ export default function DashboardPage() {
   }
 
   // Mostra banner quando: perfil carregado + nutrition não ativo + não dispensado
-  const showNutritionBanner = profile !== null && profile !== undefined && !profile.nutrition_enabled && !bannerDismissed
+  // nutrition_enabled pode ser false, null ou undefined — todos significam "sem plano"
+  const showNutritionBanner = !!profile && profile.nutrition_enabled !== true && !bannerDismissed
   const today = new Date().toISOString().slice(0, 10)
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
