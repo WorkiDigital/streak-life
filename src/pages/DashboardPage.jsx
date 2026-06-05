@@ -38,7 +38,8 @@ export default function DashboardPage() {
     await Promise.allSettled([refreshProfile(), refreshData()])
   }
 
-  const showNutritionBanner = !profile?.nutrition_enabled && !bannerDismissed
+  // Mostra banner quando: perfil carregado + nutrition não ativo + não dispensado
+  const showNutritionBanner = profile !== null && profile !== undefined && !profile.nutrition_enabled && !bannerDismissed
   const today = new Date().toISOString().slice(0, 10)
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
@@ -77,10 +78,34 @@ export default function DashboardPage() {
     return (
       <div className="page">
         <div className="container dashboard-loading">
+          {showNutritionBanner && (
+            <div
+              className="nutrition-banner"
+              onClick={() => setShowSetupModal(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => e.key === 'Enter' && setShowSetupModal(true)}
+            >
+              <span className="nutrition-banner-icon">🥗</span>
+              <div className="nutrition-banner-text">
+                <div className="nutrition-banner-title">Organizar alimentação</div>
+                <div className="nutrition-banner-sub">A IA monta sugestões de refeições para sua rotina</div>
+              </div>
+              <button className="nutrition-banner-dismiss" onClick={dismissBanner} aria-label="Dispensar">
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: 72, borderRadius: 'var(--radius-lg)' }} />
           ))}
         </div>
+        {showSetupModal && (
+          <NutritionSetupModal
+            onClose={() => setShowSetupModal(false)}
+            onApplied={handlePlanApplied}
+          />
+        )}
       </div>
     )
   }
