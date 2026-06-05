@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Trash2, Pencil, Clock } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import HabitForm from '../components/habits/HabitForm'
 import './HabitsPage.css'
@@ -27,7 +28,9 @@ export default function HabitsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
 
   const { schedules, deleteHabit, loading } = useHabits()
+  const { profile } = useAuth()
   const toast = useToast()
+  const canaisGlobais = profile?.canais_preferidos ?? ['push', 'whatsapp']
 
   const DAYS_LABEL = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
@@ -143,10 +146,10 @@ export default function HabitsPage() {
                         </div>
                       </div>
                       <div className="habit-item-channels">
-                        {schedule.canais?.includes('push') && (
+                        {canaisGlobais.includes('push') && (
                           <span className="channel-badge">📱 Push</span>
                         )}
-                        {schedule.canais?.includes('whatsapp') && (
+                        {canaisGlobais.includes('whatsapp') && (
                           <span className="channel-badge">💬 WhatsApp</span>
                         )}
                       </div>

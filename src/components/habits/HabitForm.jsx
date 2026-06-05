@@ -89,8 +89,8 @@ export default function HabitForm({ onClose, editingSchedule = null }) {
 
   const detected = detectExistingMode(existingHorarios)
 
-  // Usa canais do schedule existente (edição) ou preferência global do perfil
-  const defaultCanais = editingSchedule?.canais ?? profile?.canais_preferidos ?? ['push', 'whatsapp']
+  // Delivery is controlled globally in Settings; keep schedules aligned with that default.
+  const defaultCanais = profile?.canais_preferidos ?? ['push', 'whatsapp']
 
   const [nome, setNome] = useState(existingHabit?.nome || '')
   const [categoria, setCategoria] = useState(existingHabit?.categoria || 'outro')
