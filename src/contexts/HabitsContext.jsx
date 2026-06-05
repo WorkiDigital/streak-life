@@ -282,7 +282,12 @@ export function HabitsProvider({ children }) {
       const schedule = habitSchedules[0]
       const habit = schedule?.habits
       // Data de criação do hábito — dias anteriores não devem contar como "não registrado"
-      const habitCreatedAt = habit?.created_at ? startOfDay(new Date(habit.created_at)) : startDate
+      // Usa a data mais recente entre created_at do habit e do primeiro schedule
+      // para garantir que dias anteriores ao cadastro fiquem cinza
+      const habitCreatedRaw = habit?.created_at ?? schedule?.created_at
+      const habitCreatedAt = habitCreatedRaw
+        ? startOfDay(new Date(habitCreatedRaw))
+        : startOfDay(today) // fallback: só hoje é válido
 
       const cells = dateRange.map(date => {
         const dateStr = format(date, 'yyyy-MM-dd')
