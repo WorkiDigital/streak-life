@@ -154,7 +154,10 @@ function buildFallbackSetup(context: any) {
   const peso_meta_kg = firstMatchNumber(allText, /meta\D{0,30}(\d{2,3}(?:[,.]\d+)?)\s*kg/)
   const dias_treino = firstMatchNumber(allText, /(\d)\s*(?:dias|x)\s*(?:por\s*)?semana/)
 
-  if (!idade || !altura_cm || !peso_kg || !peso_meta_kg) return null
+  // Exige todos os dados essenciais antes de gerar o plano
+  const temRotina = /acord\w*\D{0,12}\d{1,2}(?::|h)/.test(allText) && /(?:durmo|dormir|sono)\D{0,18}\d{1,2}(?::|h)/.test(allText)
+  const temEstresse = inferStressLevel(allText) !== null || /sem estress|pouco estress|nao tenho estress/.test(allText)
+  if (!idade || !altura_cm || !peso_kg || !peso_meta_kg || !temRotina || !temEstresse) return null
 
   const wake = cleanClock(allText.match(/acord\w*\D{0,12}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '06:00'
   const treinoHora = cleanClock(allText.match(/trein\w*\D{0,18}(\d{1,2}(?::|h)?\d{0,2})/)?.[1] ?? null) ?? '18:30'
@@ -278,9 +281,17 @@ serve(async (req: Request) => {
 
     const syntheticPrompt = mode === 'onboarding'
       ? `Voce esta no onboarding. Avalie a conversa e a ultima resposta do usuario.
-Se ainda faltar dado essencial de seguranca ou rotina, faca somente a proxima pergunta.
-Se ja houver dados suficientes de triagem, anamnese, rotina, objetivo e ausencia de sinais de risco, voce DEVE entregar o plano e emitir um bloco SETUP completo com perfil e lembretes.
-Nao faca perguntas extras quando ja for possivel configurar horarios seguros e praticos.`
+
+Dados OBRIGATORIOS antes de emitir SETUP (todos precisam estar presentes):
+- idade, sexo, altura_cm, peso_kg, peso_meta_kg
+- horario_acordar, horario_dormir
+- treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino
+- horario_jantar
+- nivel_estresse
+- triagem de seguranca concluida (sem sinais de risco alimentar)
+
+Se QUALQUER desses ainda nao foi informado, faca SOMENTE a proxima pergunta pendente. Nao emita SETUP.
+Se TODOS estiverem presentes e nao houver sinal de risco, entregue o plano e emita o bloco SETUP.`
       : 'Continue a conversa de forma util. Se a mensagem do usuario indicar conclusao, ajuste ou adiamento, emita o bloco invisivel adequado.'
 
     const aiInput = [
@@ -299,16 +310,22 @@ Nao faca perguntas extras quando ja for possivel configurar horarios seguros e p
     ) {
       const setupOnlyPrompt = `
 Tarefa interna de configuracao. Analise o historico do onboarding.
-Se houver dados suficientes de perfil, objetivo, rotina, horarios, treino e triagem sem sinais de risco, responda SOMENTE com um bloco HTML SETUP JSON estrito.
-Se faltar alguma informacao essencial ou houver sinal de risco, responda somente NEED_MORE.
 
-Regras do SETUP:
-- Inclua perfil com idade, sexo, altura_cm, peso_kg, peso_meta_kg, nivel_atividade, treina, dias_treino, tipo_treino, objetivo, objetivo_descricao, prazo_meta, horario_acordar, horario_dormir, horario_treino_preferido, preferencias_alimentares, restricoes_alimentares, observacoes_saude, nivel_estresse, horarios_refeicoes, timezone e tom_preferido quando disponiveis.
-- Inclua lembretes praticos para hidratacao, treino, alimentacao/jantar, tela e sono quando fizerem sentido.
-- Use horarios no formato HH:mm.
-- Use dias_semana 0 a 6.
-- Use canais ["push"] quando o usuario nao informou WhatsApp.
-- Nao escreva explicacoes fora do bloco.
+So responda com SETUP se TODOS estes dados estiverem presentes na conversa:
+- idade, sexo, altura_cm, peso_kg, peso_meta_kg
+- horario_acordar, horario_dormir
+- treina (sim/nao), e se sim: dias_treino, tipo_treino, horario_treino_preferido
+- horario_jantar
+- nivel_estresse
+- triagem de seguranca concluida (sem sinais de risco alimentar)
+
+Se faltar qualquer um desses, responda somente: NEED_MORE
+Se houver sinal de risco alimentar, responda somente: NEED_MORE
+
+Se todos estiverem presentes, responda SOMENTE com o bloco SETUP (sem texto fora dele):
+- perfil com todos os campos disponiveis
+- lembretes personalizados: hidratacao com meta em L/dia baseada no peso, cafe da manha, almoco, lanche, jantar, treino, reduzir telas, dormir cedo, e extras conforme perfil
+- Use horarios HH:mm, dias_semana 0-6, canais ["push"] se sem WhatsApp
 `.trim()
 
       const setupRaw = await callGemini(SYSTEM_PROMPT, [
