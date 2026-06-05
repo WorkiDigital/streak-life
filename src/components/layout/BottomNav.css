@@ -1,22 +1,30 @@
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
+  position: fixed !important;
   left: 0;
   right: 0;
-  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0));
-  z-index: 50;
-  background: hsla(225, 25%, 8%, 0.9);
+  top: auto !important;
+  bottom: 0 !important;
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-modal);
+  background: hsla(225, 25%, 8%, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--color-border-subtle);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateZ(0);
+  will-change: transform;
+  isolation: isolate;
+}
+
+[data-theme="light"] .bottom-nav {
+  background: hsla(220, 20%, 97%, 0.96);
 }
 
 .bottom-nav-inner {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  height: 100%;
+  height: var(--bottom-nav-height);
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 var(--space-2);
