@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getDashboard } from '../services/goalsService'
 
+const FALLBACK = { goals_enabled: true, goals: [], weekly_goal: null, good_days: 0 }
+
 export function useGoals() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -8,9 +10,11 @@ export function useGoals() {
   const refresh = useCallback(async () => {
     try {
       const result = await getDashboard()
-      setData(result)
+      setData(result ?? FALLBACK)
     } catch {
-      // silencia — goals são opcionais
+      // Se a função falhar, assume goals_enabled=true com goals vazio
+      // para o banner de ativação aparecer
+      setData(FALLBACK)
     } finally {
       setLoading(false)
     }
