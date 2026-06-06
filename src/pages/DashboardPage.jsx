@@ -88,6 +88,12 @@ export default function DashboardPage() {
     return (
       <div className="page">
         <div className="container dashboard-loading">
+          {goalsEnabled === true && activeGoals.length === 0 && (
+            <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
+          )}
+          {goalsEnabled === true && activeGoals.length > 0 && (
+            <GoalSummaryBanner weeklyGoal={weeklyGoal} goodDays={goodDays} activeGoals={activeGoals} />
+          )}
           {showNutritionBanner && (
             <div
               className="nutrition-banner"
@@ -135,10 +141,10 @@ export default function DashboardPage() {
       <div className="container dashboard">
 
         {/* Banner de metas */}
-        {goalsEnabled && activeGoals.length === 0 && (
+        {goalsEnabled === true && activeGoals.length === 0 && (
           <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
         )}
-        {goalsEnabled && activeGoals.length > 0 && (
+        {goalsEnabled === true && activeGoals.length > 0 && (
           <GoalSummaryBanner
             weeklyGoal={weeklyGoal}
             goodDays={goodDays}

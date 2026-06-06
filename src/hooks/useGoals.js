@@ -20,7 +20,8 @@ export function useGoals() {
 
   return {
     loading,
-    goalsEnabled: data?.goals_enabled ?? false,
+    // null = ainda carregando, false = desativado, true = ativo
+    goalsEnabled: loading ? null : (data?.goals_enabled ?? false),
     weeklyGoal: data?.weekly_goal ?? null,
     goodDays: data?.good_days ?? 0,
     activeGoals: data?.goals ?? [],
