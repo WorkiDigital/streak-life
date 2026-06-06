@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState(30)
   const [confetti, setConfetti] = useState(false)
   const [showSetupModal, setShowSetupModal] = useState(false)
-  const { goalsEnabled, weeklyGoal, goodDays, activeGoals } = useGoals()
+  const { loading: goalsLoading, goalsEnabled, weeklyGoal, goodDays, activeGoals } = useGoals()
   const [bannerDismissed, setBannerDismissed] = useState(
     () => localStorage.getItem(BANNER_DISMISSED_KEY) === '1'
   )
@@ -88,10 +88,10 @@ export default function DashboardPage() {
     return (
       <div className="page">
         <div className="container dashboard-loading">
-          {goalsEnabled === true && activeGoals.length === 0 && (
+          {!goalsLoading && goalsEnabled !== false && activeGoals.length === 0 && (
             <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
           )}
-          {goalsEnabled === true && activeGoals.length > 0 && (
+          {!goalsLoading && goalsEnabled !== false && activeGoals.length > 0 && (
             <GoalSummaryBanner weeklyGoal={weeklyGoal} goodDays={goodDays} activeGoals={activeGoals} />
           )}
           {showNutritionBanner && (
