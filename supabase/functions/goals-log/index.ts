@@ -10,6 +10,7 @@ serve(async (req: Request) => {
 
     const body = await req.json()
     const habitId = body.habit_id
+    const undo = body.undo === true
     if (!habitId) return jsonResponse({ error: 'habit_id é obrigatório' }, { status: 400 })
 
     const admin = getAdminClient()
@@ -40,9 +41,8 @@ serve(async (req: Request) => {
       if (!goal) continue
 
       const goalId = goal.id as string
-      const frequency = goal.frequency as string ?? 'daily'
 
-      // Buscar log existente do dia/semana
+      // Buscar log existente do dia
       const { data: existingLog } = await admin
         .from('goal_logs')
         .select('id, value')
@@ -51,31 +51,43 @@ serve(async (req: Request) => {
         .eq('date', date)
         .maybeSingle()
 
-      const currentValue = Number(existingLog?.value ?? 0) + 1
+      if (undo) {
+        // Decrementar — se chegar a 0, remover o log
+        const newValue = Math.max(0, Number(existingLog?.value ?? 0) - 1)
+        if (newValue === 0 && existingLog) {
+          await admin.from('goal_logs').delete().eq('id', existingLog.id)
+        } else if (existingLog) {
+          await admin.from('goal_logs').update({ value: newValue, status: 'logged' }).eq('id', existingLog.id)
+        }
+        const targetValue = Number(goal.target_value ?? 0)
+        await admin.from('goals').update({
+          current_value: Math.max(0, Number(goal.current_value ?? 0) - 1),
+          status: targetValue > 0 && newValue >= targetValue ? 'completed' : 'active',
+          updated_at: new Date().toISOString(),
+        }).eq('id', goalId)
+      } else {
+        // Incrementar
+        const currentValue = Number(existingLog?.value ?? 0) + 1
+        await admin.from('goal_logs').upsert({
+          goal_id: goalId,
+          user_id: userId,
+          date,
+          value: currentValue,
+          status: 'logged',
+        }, { onConflict: 'goal_id,user_id,date' })
 
-      // Upsert goal_log
-      await admin.from('goal_logs').upsert({
-        goal_id: goalId,
-        user_id: userId,
-        date,
-        value: currentValue,
-        status: 'logged',
-      }, { onConflict: 'goal_id,user_id,date' })
-
-      // Atualizar current_value na meta
-      const targetValue = Number(goal.target_value ?? 0)
-      const newStatus = targetValue > 0 && currentValue >= targetValue ? 'completed' : undefined
-
-      const updatePayload: Record<string, unknown> = {
-        current_value: currentValue,
-        updated_at: new Date().toISOString(),
+        const targetValue = Number(goal.target_value ?? 0)
+        const newStatus = targetValue > 0 && currentValue >= targetValue ? 'completed' : undefined
+        const updatePayload: Record<string, unknown> = {
+          current_value: currentValue,
+          updated_at: new Date().toISOString(),
+        }
+        if (newStatus) updatePayload.status = newStatus
+        await admin.from('goals').update(updatePayload).eq('id', goalId)
       }
-      if (newStatus) updatePayload.status = newStatus
-
-      await admin.from('goals').update(updatePayload).eq('id', goalId)
     }
 
-    // Calcular se hoje é "dia bom" (meta de consistência)
+    // Recalcular dia bom (tanto ao marcar quanto ao desmarcar)
     await updateConsistencyGoal(admin, userId, date, threshold)
 
     return jsonResponse({ ok: true })
@@ -92,18 +104,29 @@ async function updateConsistencyGoal(
   date: string,
   threshold: number
 ) {
-  // Contar hábitos esperados e feitos hoje
+  // Hábitos esperados = schedules ativos que disparam no dia da semana do date
+  const dateObj = new Date(date + 'T12:00:00Z')
+  const dayOfWeek = dateObj.getDay() // 0=dom … 6=sab
+
+  const { data: expectedSchedules } = await admin
+    .from('habit_schedules')
+    .select('habit_id')
+    .eq('user_id', userId)
+    .eq('ativo', true)
+    .contains('dias_semana', [dayOfWeek])
+
+  const totalEsperado = expectedSchedules?.length ?? 0
+  if (totalEsperado === 0) return
+
+  // Hábitos feitos no dia (logs com status feito)
   const { data: todayLogs } = await admin
     .from('habit_logs')
     .select('status')
     .eq('user_id', userId)
     .eq('data', date)
 
-  if (!todayLogs?.length) return
-
-  const feitos = todayLogs.filter(l => l.status === 'feito').length
-  const total = todayLogs.length
-  const isGoodDay = total > 0 && feitos / total >= threshold
+  const feitos = (todayLogs ?? []).filter(l => l.status === 'feito').length
+  const isGoodDay = feitos / totalEsperado >= threshold
 
   if (!isGoodDay) return
 

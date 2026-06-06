@@ -269,6 +269,11 @@ export function HabitsProvider({ children }) {
       fetchLogs() // Revert local state on error
       throw error
     }
+
+    // Decrementar metas conectadas (fire-and-forget)
+    supabase.functions.invoke('goals-log', {
+      body: { habit_id: habitId, date: dateStr, undo: true },
+    }).catch(() => {})
   }
 
   // Get today's habits grouped by habit_id (1 card per habit, even with multiple schedules)

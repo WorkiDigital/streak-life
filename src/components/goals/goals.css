@@ -31,7 +31,7 @@
 .goals-setup-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 .goals-setup-sub {
@@ -90,7 +90,7 @@
 .goal-banner-sub {
   font-size: 16px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 .goal-banner-right {
@@ -155,7 +155,7 @@
 .goal-progress-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 .goal-progress-bar-wrap {

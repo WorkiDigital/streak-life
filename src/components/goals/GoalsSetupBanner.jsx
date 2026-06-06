@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { applyGoals } from '../../services/goalsService'
-import { supabase } from '../../lib/supabase'
+import { generateGoals, applyGoals } from '../../services/goalsService'
 import { useToast } from '../../contexts/ToastContext'
 import './goals.css'
 
@@ -15,18 +14,8 @@ export default function GoalsSetupBanner({ onActivated }) {
     if (loading) return
     setLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/goals-generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({}),
-      })
-      const data = await res.json()
-      if (!data.goals?.length) throw new Error(data.error ?? 'Falha ao gerar metas')
+      const data = await generateGoals()
+      if (!data?.goals?.length) throw new Error(data?.error ?? 'Falha ao gerar metas')
 
       await applyGoals(data.goals)
       toast.success('Metas ativadas!')

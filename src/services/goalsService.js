@@ -6,5 +6,7 @@ async function invoke(fn, body = {}) {
   return data
 }
 
+export const generateGoals = () => invoke('goals-generate')
 export const applyGoals = (goals) => invoke('goals-apply', { goals })
 export const getDashboard = () => invoke('goals-get-dashboard')
+export const logGoal = (payload) => invoke('goals-log', payload)
