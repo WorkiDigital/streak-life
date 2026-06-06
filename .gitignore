@@ -29,3 +29,11 @@ supabase/.temp
 *.sln
 *.sw?
 .vercel
+
+# Local one-off test scripts with project/user tokens or credentials
+gera_pendente.js
+query_profile.js
+reset-logs.mjs
+test-push.js
+test_whatsapp.js
+update_push_token.js
