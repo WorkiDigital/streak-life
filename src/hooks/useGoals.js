@@ -4,7 +4,7 @@ import { getDashboard } from '../services/goalsService'
 const FALLBACK = { goals_enabled: true, goals: [], weekly_goal: null, good_days: 0 }
 
 export function useGoals() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState(FALLBACK)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {

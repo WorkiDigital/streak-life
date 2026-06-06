@@ -8,8 +8,17 @@ import App from './App.jsx'
 const savedTheme = localStorage.getItem('evolui-theme')
 if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme)
 
-// Auto-update SW sem travar carregamento
-registerSW({ immediate: true })
+// Mantem o PWA atualizado tambem em desktop, onde o service worker pode segurar bundle antigo.
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    updateSW(true)
+  },
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return
+    setInterval(() => registration.update(), 60 * 60 * 1000)
+  },
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

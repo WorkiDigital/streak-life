@@ -29,7 +29,7 @@ serve(async (req: Request) => {
       .eq('id', userId)
       .single()
 
-    if (!profile?.goals_enabled) return jsonResponse({ ok: true, skipped: true })
+    if (profile?.goals_enabled === false) return jsonResponse({ ok: true, skipped: true })
 
     const date = body.date ?? todayInTimezone(profile?.timezone)
     const threshold = profile?.consistency_threshold ?? 0.7
@@ -121,7 +121,7 @@ async function updateConsistencyGoal(
     .select('id, target_value, current_value')
     .eq('user_id', userId)
     .eq('type', 'consistency')
-    .eq('status', 'active')
+    .in('status', ['active', 'completed'])
     .order('priority', { ascending: false })
     .limit(1)
     .maybeSingle()

@@ -25,7 +25,7 @@ serve(async (req: Request) => {
       .eq('id', userId)
       .single()
 
-    if (!profile?.goals_enabled) {
+    if (profile?.goals_enabled === false) {
       return jsonResponse({ goals_enabled: false, goals: [], weekly_goal: null, good_days: 0 })
     }
 
@@ -44,7 +44,7 @@ serve(async (req: Request) => {
       .from('goals')
       .select('id, title, description, category, type, target_value, current_value, unit, frequency, status, priority')
       .eq('user_id', userId)
-      .eq('status', 'active')
+      .in('status', ['active', 'completed'])
       .order('priority', { ascending: false })
 
     if (!goals?.length) {
