@@ -257,6 +257,59 @@ function buildEmptyVisibleFallback(blocks: Array<{ type: string; payload: any }>
   return 'Certo, continue me contando.'
 }
 
+function buildDirectFallback(p: Record<string, unknown>) {
+  if (!p.peso_kg || !p.idade) return null
+
+  const wake = String(p.horario_acordar ?? '06:00').slice(0, 5)
+  const sleep = String(p.horario_dormir ?? '23:00').slice(0, 5)
+  const nivel = String(p.nivel_atividade ?? 'moderado')
+  const fator = nivel === 'alto' ? 0.045 : nivel === 'moderado' ? 0.040 : 0.035
+  const aguaL = Math.round(Number(p.peso_kg) * fator * 10) / 10
+  const aguaCups = Math.round(aguaL / 0.25)
+  const refeicoes = (p.horarios_refeicoes as Record<string, string>) ?? {}
+  const cafeH = refeicoes.cafe ?? '07:00'
+  const almocoH = refeicoes.almoco ?? '12:00'
+  const lancheH = refeicoes.lanche ?? '15:30'
+  const jantarH = refeicoes.jantar ?? '20:00'
+  const treinoH = String(p.horario_treino_preferido ?? '18:30').slice(0, 5)
+  const objetivo = String(p.objetivo ?? 'saude')
+  const canais = ['push']
+  const todos = [0, 1, 2, 3, 4, 5, 6]
+
+  const treinoDias: number[] = []
+  const diasTreino = Number(p.dias_treino ?? 3)
+  if (diasTreino >= 3) treinoDias.push(1, 3, 5)
+  if (diasTreino >= 4) treinoDias.push(6)
+  if (diasTreino >= 5) treinoDias.push(2)
+  if (diasTreino >= 6) treinoDias.push(4)
+
+  const aguaTimes = timesEveryTwoHours(addMinutes(wake, 120), addMinutes(sleep, -120))
+
+  const lembretes: unknown[] = [
+    { habito: `Beber agua (meta: ${aguaL}L/dia)`, categoria: 'hidratacao', horarios: aguaTimes.slice(0, aguaCups), dias_semana: todos, canais },
+    { habito: 'Cafe da manha', categoria: 'alimentacao', horarios: [cafeH], dias_semana: todos, canais },
+    { habito: 'Almoco', categoria: 'alimentacao', horarios: [almocoH], dias_semana: todos, canais },
+    { habito: 'Lanche da tarde', categoria: 'alimentacao', horarios: [lancheH], dias_semana: todos, canais },
+    { habito: 'Jantar', categoria: 'alimentacao', horarios: [jantarH], dias_semana: todos, canais },
+  ]
+
+  if (p.treina) {
+    lembretes.push({ habito: 'Treino', categoria: 'treino', horarios: [treinoH], dias_semana: treinoDias, canais })
+  }
+
+  const telaH = addMinutes(sleep, -60)
+  lembretes.push({ habito: 'Reduzir telas', categoria: 'tela', horarios: [telaH], dias_semana: todos, canais })
+  lembretes.push({ habito: 'Dormir no horario', categoria: 'sono', horarios: [sleep], dias_semana: todos, canais })
+
+  const extras = prescribeExtras({ nivel_estresse: String(p.nivel_estresse ?? ''), dias_treino: diasTreino, tipo_treino: String(p.tipo_treino ?? ''), objetivo, treinoHora: treinoH, treinoDias, canais })
+  lembretes.push(...extras)
+
+  return {
+    perfil: { ...p, agua_litros_diaria: aguaL },
+    lembretes,
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
@@ -313,10 +366,9 @@ Responda SOMENTE com o bloco SETUP (sem texto fora dele). Nao inclua nenhuma exp
         return jsonResponse({ setup: setupBlock.payload })
       }
 
-      // Fallback: buildFallbackSetup com dados do formulário injetados no contexto
-      const fakeContext = { messages: [{ content: JSON.stringify(perfilData) }], profile: perfilData }
-      const fallback = buildFallbackSetup(fakeContext)
-      if (fallback) return jsonResponse({ setup: fallback })
+      // Fallback direto: usa perfilData estruturado sem depender de regex
+      const directFallback = buildDirectFallback(perfilData)
+      if (directFallback) return jsonResponse({ setup: directFallback })
 
       return jsonResponse({ error: 'Nao foi possivel gerar o plano' }, { status: 422 })
     }
