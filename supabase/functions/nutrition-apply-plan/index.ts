@@ -136,14 +136,7 @@ serve(async (req: Request) => {
 
       // 4d. Criar hábito de alimentação vinculado à refeição
       const nomeHabito = String(ref.nome)
-      const iconeMap: Record<string, string> = {
-        'café': '☕', 'cafe': '☕', 'café da manhã': '☕',
-        'almoço': '🍽️', 'almoco': '🍽️',
-        'lanche': '🥪',
-        'jantar': '🌙',
-        'ceia': '🌙',
-      }
-      const icone = iconeMap[nomeHabito.toLowerCase()] ?? '🥗'
+      const icone = '🍽️'
 
       const { data: habit, error: habitErr } = await admin
         .from('habits')
