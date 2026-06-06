@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { logMeal } from '../../services/nutritionService'
+import { useToast } from '../../contexts/ToastContext'
 import MealSwapDrawer from './MealSwapDrawer'
 import './nutrition.css'
 
@@ -17,6 +18,7 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showSwap, setShowSwap] = useState(false)
+  const toast = useToast()
 
   const status = meal.log?.status ?? null
   const isDone = status === 'feito' || status === 'adaptado'
@@ -29,7 +31,17 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
     setSaving(true)
     try {
       await logMeal({ meal_id: meal.id, status: newStatus })
-      onLogged?.()
+      await onLogged?.()
+      const messages = {
+        feito: 'Refeição marcada como feita',
+        adaptado: 'Adaptação registrada',
+        pulou: 'Refeição marcada como pulada',
+        pendente: 'Refeição desmarcada',
+      }
+      toast.success(messages[newStatus] ?? 'Refeição atualizada')
+    } catch (err) {
+      toast.error(`Erro ao atualizar refeição: ${err.message}`)
+      console.error(err)
     } finally {
       setSaving(false)
     }

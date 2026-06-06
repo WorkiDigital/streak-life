@@ -45,6 +45,11 @@ export default function DashboardPage() {
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
   )
+
+  async function handleNutritionLogged() {
+    await Promise.allSettled([refreshNutrition(), refreshData()])
+  }
+
   const nutritionMealsMap = useMemo(() => {
     const map = {}
     for (const meal of nutritionData?.meals ?? []) {
@@ -200,7 +205,7 @@ export default function DashboardPage() {
                     schedule={schedule}
                     nutritionMeal={nutritionMeal}
                     nutritionMode={profile?.nutrition_mode ?? 'simples'}
-                    onNutritionLogged={refreshNutrition}
+                    onNutritionLogged={handleNutritionLogged}
                   />
                 )
               })

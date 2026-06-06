@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { logMeal } from '../../services/nutritionService'
+import { useToast } from '../../contexts/ToastContext'
 import './nutrition.css'
 
 const REASONS = [
@@ -14,14 +15,20 @@ export default function MealSwapDrawer({ meal, onClose, onLogged }) {
   const [reason, setReason] = useState(null)
   const [extra, setExtra] = useState('')
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
 
   async function handleSave() {
     if (saving) return
     setSaving(true)
     try {
-      const obs = [reason ? REASONS.find(r => r.id === reason)?.label : '', extra].filter(Boolean).join(' — ')
+      const reasonLabel = reason ? REASONS.find(r => r.id === reason)?.label : ''
+      const obs = [reasonLabel, extra].filter(Boolean).join(' - ')
       await logMeal({ meal_id: meal.id, status: 'adaptado', observacao: obs })
-      onLogged?.()
+      await onLogged?.()
+      toast.success('Troca registrada como adaptação')
+    } catch (err) {
+      toast.error(`Erro ao registrar troca: ${err.message}`)
+      console.error(err)
     } finally {
       setSaving(false)
     }
@@ -61,6 +68,7 @@ export default function MealSwapDrawer({ meal, onClose, onLogged }) {
             className="btn btn-secondary"
             style={{ flex: 1 }}
             onClick={onClose}
+            disabled={saving}
           >
             Cancelar
           </button>
@@ -70,7 +78,7 @@ export default function MealSwapDrawer({ meal, onClose, onLogged }) {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? 'Salvando…' : 'Registrar adaptação'}
+            {saving ? 'Salvando...' : 'Registrar adaptação'}
           </button>
         </div>
       </div>

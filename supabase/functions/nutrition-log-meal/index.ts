@@ -57,28 +57,37 @@ serve(async (req: Request) => {
       return jsonResponse({ error: 'Erro ao registrar: ' + logErr.message }, { status: 500 })
     }
 
-    // Se feito ou adaptado, marcar habit_log correspondente
-    if (status === 'feito' || status === 'adaptado') {
-      const { data: habit } = await admin
-        .from('habits')
-        .select('id')
-        .eq('nutrition_meal_id', meal_id)
-        .eq('user_id', userId)
-        .single()
+    const { data: habit } = await admin
+      .from('habits')
+      .select('id')
+      .eq('nutrition_meal_id', meal_id)
+      .eq('user_id', userId)
+      .single()
 
-      if (habit) {
-        await admin
-          .from('habit_logs')
-          .upsert(
-            {
-              habit_id: habit.id,
-              user_id: userId,
-              data: today,
-              status: 'feito',
-              nutrition_meal_log_id: mealLog?.id ?? null,
-            },
-            { onConflict: 'habit_id,user_id,data' }
-          )
+    if (habit) {
+      const habitStatus =
+        status === 'feito' || status === 'adaptado'
+          ? 'feito'
+          : status === 'pulou'
+            ? 'nao_feito'
+            : 'pendente'
+
+      const { error: habitLogErr } = await admin
+        .from('habit_logs')
+        .upsert(
+          {
+            habit_id: habit.id,
+            user_id: userId,
+            data: today,
+            status: habitStatus,
+            nutrition_meal_log_id: mealLog?.id ?? null,
+            marcado_em: habitStatus === 'feito' ? new Date().toISOString() : null,
+          },
+          { onConflict: 'habit_id,user_id,data' }
+        )
+
+      if (habitLogErr) {
+        return jsonResponse({ error: 'Erro ao atualizar habito: ' + habitLogErr.message }, { status: 500 })
       }
     }
 
