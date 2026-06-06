@@ -11,9 +11,8 @@ export function useGoals() {
     try {
       const result = await getDashboard()
       setData(result ?? FALLBACK)
-    } catch {
-      // Se a função falhar, assume goals_enabled=true com goals vazio
-      // para o banner de ativação aparecer
+    } catch (err) {
+      console.error('[useGoals] erro ao buscar dashboard:', err?.message ?? err)
       setData(FALLBACK)
     } finally {
       setLoading(false)

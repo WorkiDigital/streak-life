@@ -141,10 +141,10 @@ export default function DashboardPage() {
       <div className="container dashboard">
 
         {/* Banner de metas */}
-        {goalsEnabled === true && activeGoals.length === 0 && (
+        {!goalsLoading && goalsEnabled !== false && activeGoals.length === 0 && (
           <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
         )}
-        {goalsEnabled === true && activeGoals.length > 0 && (
+        {!goalsLoading && goalsEnabled !== false && activeGoals.length > 0 && (
           <GoalSummaryBanner
             weeklyGoal={weeklyGoal}
             goodDays={goodDays}
