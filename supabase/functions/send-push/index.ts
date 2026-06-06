@@ -2,18 +2,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.107.0'
 // @deno-types="npm:@types/web-push@3.6.3"
 import webpush from 'npm:web-push@3.6.7'
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-  })
-}
+import { CORS_HEADERS, jsonResponse } from '../_shared/agent.ts'
 
 let vapidConfigured = false
 
@@ -24,7 +13,7 @@ serve(async (req: Request) => {
     if (!vapidConfigured) {
       const pub = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
       const priv = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
-      if (!pub || !priv) return jsonResponse({ error: 'VAPID keys nao configuradas' }, 500)
+      if (!pub || !priv) return jsonResponse({ error: 'VAPID keys nao configuradas' }, { status: 500 })
       webpush.setVapidDetails('mailto:contato@evolui.app', pub, priv)
       vapidConfigured = true
     }
@@ -51,7 +40,7 @@ serve(async (req: Request) => {
         global: { headers: { Authorization: authHeader } },
       })
       const { data: { user }, error } = await client.auth.getUser()
-      if (error || !user) return jsonResponse({ error: 'Nao autenticado' }, 401)
+      if (error || !user) return jsonResponse({ error: 'Nao autenticado' }, { status: 401 })
       callerUserId = user.id
     }
 
@@ -66,12 +55,12 @@ serve(async (req: Request) => {
     const data = reqBody.data ?? payloadObj.data ?? {}
 
     if (!subscription?.endpoint || !body) {
-      return jsonResponse({ error: 'subscription.endpoint e body sao obrigatorios' }, 400)
+      return jsonResponse({ error: 'subscription.endpoint e body sao obrigatorios' }, { status: 400 })
     }
 
     // If called by a user (not service role), ensure they can only push to themselves
     if (callerUserId && callerUserId !== userId) {
-      return jsonResponse({ error: 'Unauthorized' }, 403)
+      return jsonResponse({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const payload = JSON.stringify({
@@ -91,8 +80,8 @@ serve(async (req: Request) => {
   } catch (err: any) {
     console.error('[send-push] Erro:', err)
     if (err?.statusCode === 410 || err?.statusCode === 404) {
-      return jsonResponse({ success: false, reason: 'subscription_expired' }, 200)
+      return jsonResponse({ success: false, reason: 'subscription_expired' })
     }
-    return jsonResponse({ error: err?.message ?? String(err) }, 500)
+    return jsonResponse({ error: err?.message ?? String(err) }, { status: 500 })
   }
 })

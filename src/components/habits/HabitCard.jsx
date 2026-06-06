@@ -45,6 +45,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         }
       } else {
         setAnimating(true)
+        setShowNutrition(false)
         setShowExtra(true)
         setTimeout(() => setAnimating(false), 600)
       }
@@ -111,7 +112,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         {hasNutrition && (
           <button
             className="habit-card-expand-btn"
-            onClick={() => setShowNutrition(v => !v)}
+            onClick={() => { setShowExtra(false); setShowNutrition(v => !v) }}
             aria-label={showNutrition ? 'Fechar refeição' : 'Ver refeição'}
           >
             <ChevronDown size={16} style={{ transform: showNutrition ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />

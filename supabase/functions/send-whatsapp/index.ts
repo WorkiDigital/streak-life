@@ -1,7 +1,7 @@
 // supabase/functions/send-whatsapp/index.ts
 // Envia mensagem WhatsApp via Evolution API
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 
 const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL') ?? ''
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? ''

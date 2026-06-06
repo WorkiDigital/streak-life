@@ -1,9 +1,5 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.107.0'
-import {
-  CORS_HEADERS,
-  jsonResponse,
-} from '../_shared/agent.ts'
+import { CORS_HEADERS, getUserFromRequest, jsonResponse } from '../_shared/agent.ts'
 
 const NUTRITION_SYSTEM_PROMPT = `Você é uma IA de nutrição. Monte sugestões de refeições práticas com base no perfil do usuário.
 
@@ -49,14 +45,7 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
-    const { data: { user }, error: authError } = await client.auth.getUser()
+    const { user, error: authError } = await getUserFromRequest(req)
     if (authError || !user) return jsonResponse({ error: 'Não autenticado' }, { status: 401 })
 
     const body = await req.json()

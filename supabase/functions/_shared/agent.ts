@@ -135,15 +135,10 @@ export async function getAuthUser(authHeader: string) {
   return { user, error: null }
 }
 
-/** @deprecated use getAuthUser */
-export function getUserClient(authHeader: string) {
-  const url = Deno.env.get('SUPABASE_URL') ?? ''
-  const key = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-  if (!url || !key) throw new Error('SUPABASE_URL e SUPABASE_ANON_KEY sao obrigatorios')
-  return createClient(url, key, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+export async function getUserFromRequest(req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const { user, error } = await getAuthUser(authHeader)
+  return { user, error, authHeader }
 }
 
 export function sanitizeAgentContent(content: string) {

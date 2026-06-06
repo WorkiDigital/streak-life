@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Flame, Target, TrendingUp, Calendar, X } from 'lucide-react'
+import { Flame, Target, TrendingUp, Calendar } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
 import { useAuth } from '../contexts/AuthContext'
 import HabitCard from '../components/habits/HabitCard'
@@ -8,6 +8,7 @@ import { useTodayNutrition } from '../hooks/useTodayNutrition'
 import NutritionSetupModal from '../components/nutrition/NutritionSetupModal'
 import GoalSummaryBanner from '../components/goals/GoalSummaryBanner'
 import GoalsSetupBanner from '../components/goals/GoalsSetupBanner'
+import NutritionBanner from '../components/nutrition/NutritionBanner'
 import { useGoals } from '../hooks/useGoals'
 import '../components/nutrition/nutrition.css'
 import './DashboardPage.css'
@@ -95,22 +96,7 @@ export default function DashboardPage() {
             <GoalSummaryBanner weeklyGoal={weeklyGoal} goodDays={goodDays} activeGoals={activeGoals} />
           )}
           {showNutritionBanner && (
-            <div
-              className="nutrition-banner"
-              onClick={() => setShowSetupModal(true)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => e.key === 'Enter' && setShowSetupModal(true)}
-            >
-              <span className="nutrition-banner-icon">🥗</span>
-              <div className="nutrition-banner-text">
-                <div className="nutrition-banner-title">Organizar alimentação</div>
-                <div className="nutrition-banner-sub">A IA monta sugestões de refeições para sua rotina</div>
-              </div>
-              <button className="nutrition-banner-dismiss" onClick={dismissBanner} aria-label="Dispensar">
-                <X size={14} />
-              </button>
-            </div>
+            <NutritionBanner onClick={() => setShowSetupModal(true)} onDismiss={dismissBanner} />
           )}
           {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: 72, borderRadius: 'var(--radius-lg)' }} />
@@ -154,22 +140,7 @@ export default function DashboardPage() {
 
         {/* Banner nutricional */}
         {showNutritionBanner && (
-          <div
-            className="nutrition-banner"
-            onClick={() => setShowSetupModal(true)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && setShowSetupModal(true)}
-          >
-            <span className="nutrition-banner-icon">🥗</span>
-            <div className="nutrition-banner-text">
-              <div className="nutrition-banner-title">Organizar alimentação</div>
-              <div className="nutrition-banner-sub">A IA monta sugestões de refeições para sua rotina</div>
-            </div>
-            <button className="nutrition-banner-dismiss" onClick={dismissBanner} aria-label="Dispensar">
-              <X size={14} />
-            </button>
-          </div>
+          <NutritionBanner onClick={() => setShowSetupModal(true)} onDismiss={dismissBanner} />
         )}
 
         {/* Today Section */}
