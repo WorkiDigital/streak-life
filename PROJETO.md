@@ -450,6 +450,68 @@ Onboarding por steps fixos era rígido. A IA conduz o onboarding naturalmente, u
 
 - Build limpo: `✓ built in ~3.4s`
 - Warning: bundle ~500 kB (pode resolver com `manualChunks`)
-- Edge Functions deployadas: `agent-chat`, `generate-reminder`, `send-push`, `send-whatsapp`, `whatsapp-inbound`
-- Migrations aplicadas: 9 migrations no remoto
+- Edge Functions deployadas: `agent-chat`, `generate-reminder`, `send-push`, `send-whatsapp`, `whatsapp-inbound`, `nutrition-generate-plan`, `nutrition-apply-plan`, `nutrition-get-today`, `nutrition-log-meal`
+- Migrations aplicadas: 10 migrations no remoto (inclui `20260606_nutrition_plan.sql`)
 - Bug em investigação: `agent-chat` retorna 401 quando chamada do app em produção (causa: `getAuthUser` com JWT de sessão ainda em debug)
+
+---
+
+## Plano Nutricional Opcional v1.0 (2026-06-06)
+
+### Conceito
+Refeições viram hábitos de categoria `alimentacao` com `nutrition_meal_id` FK. Aparecem naturalmente na lista "Hoje" do Dashboard sem nova aba ou tela.
+
+### Fluxo do usuário
+1. Dashboard exibe banner "Organizar alimentação" quando `nutrition_enabled = false`
+2. Usuário clica → modal abre → escolhe modo (simples/detalhado/profissional)
+3. IA gera plano JSON via Gemini (Edge Function `nutrition-generate-plan`)
+4. Preview do plano → usuário confirma → `nutrition-apply-plan` salva + cria hábitos
+5. Banner some, cards de refeição aparecem no Dashboard com setinha expansível
+
+### Edge Functions de nutrição
+| Função | Descrição |
+|--------|-----------|
+| `nutrition-generate-plan` | Chama Gemini, retorna JSON do plano sem salvar. `maxOutputTokens: 8192`. Parser 3-estratégias (JSON puro → bloco ```json``` → primeiro `{}`). |
+| `nutrition-apply-plan` | Salva plan→targets→meals→items→substituições→habits→schedules. Desativa hábitos `alimentacao` antigos sem `nutrition_meal_id`. |
+| `nutrition-get-today` | Retorna refeições do dia com itens, substituições e logs. |
+| `nutrition-log-meal` | Upsert `nutrition_meal_logs` + `habit_logs` vinculado. |
+
+### Tabelas novas (migration `20260606_nutrition_plan.sql`)
+- `nutrition_plans` — plano ativo/arquivado por usuário
+- `nutrition_targets` — metas diárias (proteína, carb, gordura, calorias, água)
+- `nutrition_meals` — refeições do plano (café, almoço, lanche, jantar)
+- `nutrition_meal_items` — itens de cada refeição com quantidades em faixas
+- `nutrition_substitutions` — substituições por refeição
+- `nutrition_meal_logs` — log diário de cada refeição (feito/adaptado/pulou)
+- ALTER `profiles`: `+nutrition_enabled bool`, `+nutrition_mode text`, `+nutrition_safety_status text`
+- ALTER `habits`: `+nutrition_meal_id uuid FK`
+- ALTER `habit_logs`: `+nutrition_meal_log_id uuid FK`
+
+### Componentes novos
+- `src/components/nutrition/NutritionMealCard.jsx` — card expansível de refeição (inline no HabitCard)
+- `src/components/nutrition/NutritionPlanPreview.jsx` — preview do plano no modal
+- `src/components/nutrition/MealSwapDrawer.jsx` — drawer para troca de refeição
+- `src/components/nutrition/NutritionSetupModal.jsx` — modal de criação pós-onboarding
+- `src/components/nutrition/nutrition.css` — estilos de todos os componentes acima
+- `src/services/nutritionService.js` — funções invoke das 4 Edge Functions
+- `src/hooks/useTodayNutrition.js` — hook para buscar dados do dia
+
+### Modificações em arquivos existentes
+- `DashboardPage.jsx` — banner nutricional, `useTodayNutrition`, `nutritionMealsMap`, passa props para `HabitCard`
+- `HabitCard.jsx` — setinha expansível, renderiza `NutritionMealCard` inline quando `nutrition_meal_id` existe
+- `OnboardingPage.jsx` — steps 4b (escolha nutricional) e 4c (modo), geração paralela, preview no step de revisão
+- `SettingsPage.jsx` — seção "Plano Alimentar" com toggle e seletor de modo
+
+### Decisões técnicas
+- `safetySettings: BLOCK_ONLY_HIGH` no Gemini para evitar bloqueio falso em conteúdo de saúde
+- `maxOutputTokens: 8192` — plano JSON completo ultrapassa 4096 tokens
+- Prompt compacto: 1 frase por campo de texto, máx 3 itens/refeição, 1 substituição
+- `apply-plan` desativa hábitos `alimentacao` sem `nutrition_meal_id` para evitar duplicatas
+- Banner dispensável via `localStorage` key `nutrition_banner_dismissed`
+- Safety gate: bloqueia geração para menores de 18, gestantes, keywords de transtorno alimentar
+
+### Estado atual
+- Geração e ativação do plano funcionando em produção
+- Cards de refeição aparecem no Dashboard com setinha para expandir detalhes
+- Sem emoji no `NutritionMealCard` (hábitos normais mantêm emoji)
+- `apply-plan` desativa hábitos alimentação antigos automaticamente
