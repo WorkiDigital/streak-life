@@ -27,12 +27,20 @@ serve(async (req: Request) => {
     const admin = getAdminClient()
     const userId = user.id
 
-    // 1. Arquivar plano ativo anterior
+    // 1. Arquivar plano ativo anterior + desativar hábitos de alimentação antigos
     await admin
       .from('nutrition_plans')
       .update({ status: 'archived' })
       .eq('user_id', userId)
       .eq('status', 'active')
+
+    // Desativar hábitos alimentação sem nutrition_meal_id (criados antes do plano)
+    await admin
+      .from('habits')
+      .update({ ativo: false })
+      .eq('user_id', userId)
+      .eq('categoria', 'alimentacao')
+      .is('nutrition_meal_id', null)
 
     // 2. Criar nutrition_plan
     const { data: plan, error: planErr } = await admin

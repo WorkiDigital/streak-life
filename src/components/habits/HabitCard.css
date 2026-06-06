@@ -72,6 +72,21 @@
   transform: scale(0.95);
 }
 
+.habit-card-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
 .btn-pending {
   background: var(--color-done-subtle);
   color: var(--color-done);

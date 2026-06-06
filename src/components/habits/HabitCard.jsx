@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Clock, X, Loader2 } from 'lucide-react'
+import { Check, Clock, X, Loader2, ChevronDown } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
 import { useToast } from '../../contexts/ToastContext'
 import NutritionMealCard from '../nutrition/NutritionMealCard'
@@ -8,6 +8,7 @@ import './HabitCard.css'
 export default function HabitCard({ schedule, nutritionMeal = null, nutritionMode = 'simples', onNutritionLogged }) {
   const [animating, setAnimating] = useState(false)
   const [showExtra, setShowExtra] = useState(false)
+  const [showNutrition, setShowNutrition] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [valor, setValor] = useState('')
@@ -99,8 +100,23 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
             {!isMulti && isDone && schedule.log?.valor && (
               <span className="habit-card-valor text-xs text-secondary">{schedule.log.valor}</span>
             )}
+            {hasNutrition && (
+              <span className="text-xs text-secondary" style={{ marginTop: 2 }}>
+                {nutritionMeal?.descricao_simples?.slice(0, 40) ?? 'Ver refeição'}...
+              </span>
+            )}
           </div>
         </div>
+
+        {hasNutrition && (
+          <button
+            className="habit-card-expand-btn"
+            onClick={() => setShowNutrition(v => !v)}
+            aria-label={showNutrition ? 'Fechar refeição' : 'Ver refeição'}
+          >
+            <ChevronDown size={16} style={{ transform: showNutrition ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        )}
 
         <button
           className={`habit-card-btn ${allDone ? 'btn-done' : 'btn-pending'}`}
@@ -124,8 +140,8 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         </button>
       </div>
 
-      {/* Plano nutricional expansível — quando refeição vinculada existe */}
-      {hasNutrition && (
+      {/* Painel de nutrição expansível — inline no card */}
+      {hasNutrition && showNutrition && (
         <NutritionMealCard
           meal={{ ...nutritionMeal, log: schedule.log?.nutrition_meal_log ?? nutritionMeal.log }}
           mode={nutritionMode}
