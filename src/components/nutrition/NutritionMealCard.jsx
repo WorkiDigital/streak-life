@@ -3,17 +3,6 @@ import { logMeal } from '../../services/nutritionService'
 import MealSwapDrawer from './MealSwapDrawer'
 import './nutrition.css'
 
-const ICONS = {
-  'café': '☕', 'cafe': '☕', 'café da manhã': '☕', 'cafe da manha': '☕',
-  'almoço': '🍽️', 'almoco': '🍽️',
-  'lanche': '🥪', 'lanche da tarde': '🥪',
-  'jantar': '🌙',
-  'ceia': '🌙',
-}
-
-function mealIcon(nome) {
-  return ICONS[nome?.toLowerCase()] ?? '🥗'
-}
 
 function formatQty(item) {
   if (!item.quantidade_min && !item.quantidade_max) return null
@@ -51,7 +40,6 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
       <div className={`nm-card ${isDone ? 'done' : ''} ${isPulou ? 'pulou' : ''}`}>
         {/* Header clicável */}
         <div className="nm-header" onClick={() => setOpen(o => !o)}>
-          <span className="nm-icon">{mealIcon(meal.nome)}</span>
           <div className="nm-info">
             <div className="nm-name">
               {meal.nome}

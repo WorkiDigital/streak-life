@@ -83,7 +83,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         className={`habit-card glass-card ${allDone ? 'done' : ''} ${isMissed ? 'missed' : ''} ${animating ? 'animate-burst' : ''}`}
       >
         <div className="habit-card-info">
-          {!hasNutrition && <span className="habit-card-icon">{habit?.icone || '📋'}</span>}
+          <span className="habit-card-icon">{habit?.icone || '📋'}</span>
           <div className="habit-card-text">
             <span className="habit-card-name">{habit?.nome || 'Hábito'}</span>
             <span className="habit-card-time text-xs text-secondary">
