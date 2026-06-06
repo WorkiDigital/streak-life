@@ -3,6 +3,8 @@ import { X, Share2 } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
 import { useToast } from '../contexts/ToastContext'
 import HabitHeatmap from '../components/habits/HabitHeatmap'
+import GoalProgressCard from '../components/goals/GoalProgressCard'
+import { useGoals } from '../hooks/useGoals'
 import './ProgressPage.css'
 
 const PERIOD_OPTIONS = [
@@ -27,6 +29,7 @@ export default function ProgressPage() {
   const [selectedHabit, setSelectedHabit] = useState(null)
   const { getHeatmapData, getStats, getWeeklyStats, schedules, logs, loading } = useHabits()
   const toast = useToast()
+  const { goalsEnabled, activeGoals, weeklyGoal, goodDays } = useGoals()
   const { matrix, dates } = useMemo(() => getHeatmapData(period), [logs, schedules, period])
   const stats = useMemo(() => getStats(period), [logs, schedules, period])
   const weeklyData = useMemo(() => getWeeklyStats(8), [logs, schedules])
@@ -88,6 +91,20 @@ export default function ProgressPage() {
             </button>
           ))}
         </div>
+
+        {/* Metas */}
+        {goalsEnabled && activeGoals.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-secondary" style={{ marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Metas {weeklyGoal ? `— ${goodDays} dias bons esta semana` : ''}
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {activeGoals.map(goal => (
+                <GoalProgressCard key={goal.id} goal={goal} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Summary stats */}
         <div className="progress-stats">

@@ -6,6 +6,8 @@ import HabitCard from '../components/habits/HabitCard'
 import HabitHeatmap from '../components/habits/HabitHeatmap'
 import { useTodayNutrition } from '../hooks/useTodayNutrition'
 import NutritionSetupModal from '../components/nutrition/NutritionSetupModal'
+import GoalSummaryBanner from '../components/goals/GoalSummaryBanner'
+import { useGoals } from '../hooks/useGoals'
 import '../components/nutrition/nutrition.css'
 import './DashboardPage.css'
 
@@ -21,6 +23,7 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState(30)
   const [confetti, setConfetti] = useState(false)
   const [showSetupModal, setShowSetupModal] = useState(false)
+  const { goalsEnabled, weeklyGoal, goodDays, activeGoals } = useGoals()
   const [bannerDismissed, setBannerDismissed] = useState(
     () => localStorage.getItem(BANNER_DISMISSED_KEY) === '1'
   )
@@ -129,6 +132,15 @@ export default function DashboardPage() {
         </div>
       )}
       <div className="container dashboard">
+
+        {/* Banner de metas */}
+        {goalsEnabled && (
+          <GoalSummaryBanner
+            weeklyGoal={weeklyGoal}
+            goodDays={goodDays}
+            activeGoals={activeGoals}
+          />
+        )}
 
         {/* Banner nutricional */}
         {showNutritionBanner && (

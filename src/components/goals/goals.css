@@ -1,0 +1,137 @@
+/* =============================================
+   Goals Components — Streak Life
+   ============================================= */
+
+/* --- GoalSummaryBanner --- */
+.goal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+  margin-bottom: var(--space-3);
+}
+
+.goal-banner:hover {
+  opacity: 0.85;
+}
+
+.goal-banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-banner-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.goal-banner-sub {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.goal-banner-right {
+  flex-shrink: 0;
+  margin-left: var(--space-3);
+}
+
+.goal-banner-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-banner-pct {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* --- GoalProgressCard --- */
+.goal-progress-card {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.goal-progress-card.completed {
+  border-color: var(--color-done);
+  opacity: 0.8;
+}
+
+.goal-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.goal-progress-category {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.goal-progress-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-done);
+  background: var(--color-done-subtle);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.goal-progress-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.goal-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.goal-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-primary);
+  transition: width 0.4s ease;
+}
+
+.goal-progress-value {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

@@ -194,6 +194,7 @@ export default function SettingsPage() {
     () => document.documentElement.getAttribute('data-theme') === 'light'
   )
   const [nutritionSaving, setNutritionSaving] = useState(false)
+  const [goalsSaving, setGoalsSaving] = useState(false)
 
   useEffect(() => {
     setProfileForm(buildProfileForm(profile))
@@ -295,6 +296,32 @@ export default function SettingsPage() {
       toast.error(error.message || 'Erro ao salvar perfil')
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  async function handleGoalsToggle() {
+    if (goalsSaving) return
+    setGoalsSaving(true)
+    try {
+      const next = !profile?.goals_enabled
+      await updateProfile({ goals_enabled: next })
+      toast.success(next ? 'Sistema de metas ativado' : 'Sistema de metas pausado')
+    } catch {
+      toast.error('Erro ao atualizar metas')
+    } finally {
+      setGoalsSaving(false)
+    }
+  }
+
+  async function handleThresholdChange(val) {
+    if (goalsSaving) return
+    setGoalsSaving(true)
+    try {
+      await updateProfile({ consistency_threshold: val })
+    } catch {
+      toast.error('Erro ao atualizar meta de consistência')
+    } finally {
+      setGoalsSaving(false)
     }
   }
 
@@ -693,6 +720,44 @@ export default function SettingsPage() {
                       className={`channel-toggle ${profile?.nutrition_mode === m.v ? 'active' : ''}`}
                       onClick={() => handleNutritionModeChange(m.v)}
                       disabled={nutritionSaving}
+                    >
+                      {m.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Sistema de Metas */}
+        <section className="settings-section">
+          <h2 className="settings-section-title">🎯 Sistema de Metas</h2>
+          <div className="settings-card glass-card" style={{ overflow: 'hidden' }}>
+            <div className={`settings-row ${goalsSaving ? 'settings-row-disabled' : ''}`} onClick={handleGoalsToggle}>
+              <div className="settings-row-info">
+                <span className="settings-row-label">Metas ativas</span>
+                <span className="settings-row-desc">
+                  {profile?.goals_enabled !== false ? 'Banner de progresso aparece no Início' : 'Desativado'}
+                </span>
+              </div>
+              <div className={`toggle-switch ${profile?.goals_enabled !== false ? 'on' : ''}`} aria-busy={goalsSaving} />
+            </div>
+
+            {profile?.goals_enabled !== false && (
+              <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                <span className="settings-row-label">Meta de dia bom</span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[
+                    { v: 0.5, l: 'Leve (50%)' },
+                    { v: 0.7, l: 'Equilibrado (70%)' },
+                    { v: 0.85, l: 'Alta performance (85%)' },
+                  ].map(m => (
+                    <button
+                      key={m.v}
+                      className={`channel-toggle ${(profile?.consistency_threshold ?? 0.7) === m.v ? 'active' : ''}`}
+                      onClick={() => handleThresholdChange(m.v)}
+                      disabled={goalsSaving}
                     >
                       {m.l}
                     </button>

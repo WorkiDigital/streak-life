@@ -70,6 +70,20 @@ serve(async (req: Request) => {
 
     if (error) throw error
 
+    // Atualizar metas conectadas (fire-and-forget, não bloqueia resposta)
+    if (allDone) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+      fetch(`${supabaseUrl}/functions/v1/goals-log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+          apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        },
+        body: JSON.stringify({ habit_id: habitId, date }),
+      }).catch(() => {})
+    }
+
     return jsonResponse({ ok: true, data })
   } catch (err: any) {
     console.error('[habit-mark-done] Erro:', err)
