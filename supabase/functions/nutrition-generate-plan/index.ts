@@ -5,58 +5,17 @@ import {
   jsonResponse,
 } from '../_shared/agent.ts'
 
-const NUTRITION_SYSTEM_PROMPT = `Você é uma IA especializada em nutrição comportamental e organização de rotina saudável.
+const NUTRITION_SYSTEM_PROMPT = `Você é uma IA de nutrição. Monte sugestões de refeições práticas com base no perfil do usuário.
 
-Sua função é montar sugestões de refeições práticas e saudáveis com base nos dados fornecidos pelo usuário.
+REGRAS CRÍTICAS:
+- Retorne APENAS JSON válido, sem nenhum texto antes ou depois, sem markdown.
+- Seja EXTREMAMENTE CONCISO: objetivo em 1 frase, observacoes_gerais em 1 frase.
+- Máximo 3 itens por refeição. Máximo 1 substituição por refeição.
+- Nomes de alimentos curtos (ex: "Frango grelhado", não "Peito de frango grelhado temperado com ervas").
+- Alimentos simples e comuns no Brasil.
 
-REGRAS:
-- Priorize alimentos simples e comuns no Brasil.
-- Use quantidades em faixas (ex: 130g a 160g).
-- Gere refeições nos horários informados.
-- Inclua observação de que as sugestões não substituem acompanhamento profissional.
-
-FORMATO OBRIGATÓRIO:
-Retorne APENAS o JSON abaixo, sem markdown, sem texto antes ou depois, sem blocos de código:
-
-{
-  "objetivo": "string",
-  "observacoes_gerais": "string",
-  "metas": {
-    "proteina_g": number,
-    "carboidrato_g": number,
-    "gordura_g": number,
-    "agua_litros": number,
-    "calorias_estimadas": number
-  },
-  "refeicoes": [
-    {
-      "nome": "string",
-      "horario": "HH:MM",
-      "ordem": number,
-      "descricao_simples": "string",
-      "objetivo_refeicao": "string",
-      "proteina_g": number,
-      "carboidrato_g": number,
-      "gordura_g": number,
-      "calorias_estimadas": number,
-      "itens": [
-        {
-          "alimento": "string",
-          "quantidade_min": number,
-          "quantidade_max": number,
-          "unidade": "string",
-          "grupo": "proteina|carboidrato|gordura|vegetal|fruta|laticinios|outro"
-        }
-      ],
-      "substituicoes": [
-        {
-          "alimento_original": "string",
-          "substituto": "string"
-        }
-      ]
-    }
-  ]
-}`
+FORMATO (retorne exatamente isso):
+{"objetivo":"...","observacoes_gerais":"...","metas":{"proteina_g":0,"carboidrato_g":0,"gordura_g":0,"agua_litros":0,"calorias_estimadas":0},"refeicoes":[{"nome":"...","horario":"HH:MM","ordem":1,"descricao_simples":"...","objetivo_refeicao":"...","proteina_g":0,"carboidrato_g":0,"gordura_g":0,"calorias_estimadas":0,"itens":[{"alimento":"...","quantidade_min":0,"quantidade_max":0,"unidade":"g","grupo":"proteina"}],"substituicoes":[{"alimento_original":"...","substituto":"..."}]}]}`
 
 function hasNutritionRisk(perfil: Record<string, unknown>): { risk: boolean; reason: string } {
   const idade = Number(perfil.idade ?? 99)
@@ -120,32 +79,11 @@ serve(async (req: Request) => {
       ? 'Inclua quantidades em faixas (ex: 130g-160g). Máximo 3 itens por refeição, 2 substituições.'
       : 'Sem gramas. Descreva cada item como "uma porção de X". Máximo 3 itens por refeição, 1 substituição. Seja muito conciso.'
 
-    const userPrompt = `
-Monte um plano alimentar personalizado para este usuário:
-
-Nome: ${perfil.nome ?? 'Usuário'}
-Idade: ${perfil.idade} anos
-Sexo: ${perfil.sexo}
-Altura: ${perfil.altura_cm}cm | Peso: ${perfil.peso_kg}kg | Meta: ${perfil.peso_meta_kg}kg
-Objetivo: ${perfil.objetivo}
-Nível de atividade: ${perfil.nivel_atividade}
-Treino: ${perfil.treina ? `${perfil.tipo_treino}, ${perfil.dias_treino}x/semana, ${perfil.horario_treino}` : 'Não treina'}
-Horário acordar: ${perfil.horario_acordar} | Dormir: ${perfil.horario_dormir}
-Refeições:
-- Café da manhã: ${perfil.horario_cafe}
-- Almoço: ${perfil.horario_almoco}
-- Lanche: ${perfil.horario_lanche}
-- Jantar: ${perfil.horario_jantar}
-Preferências alimentares: ${perfil.preferencias_alimentares ?? 'nenhuma'}
-Restrições: ${perfil.restricoes_alimentares ?? 'nenhuma'}
-Observações de saúde: ${perfil.observacoes_saude ?? 'nenhuma'}
-Nível de estresse: ${perfil.nivel_estresse}
-
-Nível de detalhe desejado: ${mode}
-${modeDesc}
-
-Gere o plano no formato EXATO. Inclua 4 refeições (café, almoço, lanche, jantar). Seja conciso — objetivo e observacoes_gerais com no máximo 2 frases cada.
-`.trim()
+    const userPrompt = `Perfil: ${perfil.nome}, ${perfil.idade}a, ${perfil.sexo}, ${perfil.altura_cm}cm, ${perfil.peso_kg}kg→${perfil.peso_meta_kg}kg, objetivo=${perfil.objetivo}, atividade=${perfil.nivel_atividade}, treino=${perfil.treina ? `${perfil.tipo_treino} ${perfil.dias_treino}x/sem` : 'não'}, estresse=${perfil.nivel_estresse}
+Horários: café=${perfil.horario_cafe}, almoço=${perfil.horario_almoco}, lanche=${perfil.horario_lanche}, jantar=${perfil.horario_jantar}
+Restrições: ${perfil.restricoes_alimentares ?? 'nenhuma'} | Preferências: ${perfil.preferencias_alimentares ?? 'nenhuma'}
+Modo: ${mode}. ${modeDesc}
+Gere JSON com 4 refeições (café, almoço, lanche, jantar). APENAS JSON, sem texto extra.`
 
     // Usa callGemini direto com safetySettings mais permissivos para conteúdo de saúde/nutrição
     const geminiKey = Deno.env.get('GEMINI_API_KEY') ?? ''
