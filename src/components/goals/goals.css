@@ -2,6 +2,50 @@
    Goals Components — Streak Life
    ============================================= */
 
+/* --- GoalsSetupBanner --- */
+.goals-setup-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  margin-bottom: var(--space-3);
+}
+
+.goals-setup-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.goals-setup-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.goals-setup-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.goals-setup-sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.goals-setup-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 /* --- GoalSummaryBanner --- */
 .goal-banner {
   display: flex;

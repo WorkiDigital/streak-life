@@ -7,6 +7,7 @@ import HabitHeatmap from '../components/habits/HabitHeatmap'
 import { useTodayNutrition } from '../hooks/useTodayNutrition'
 import NutritionSetupModal from '../components/nutrition/NutritionSetupModal'
 import GoalSummaryBanner from '../components/goals/GoalSummaryBanner'
+import GoalsSetupBanner from '../components/goals/GoalsSetupBanner'
 import { useGoals } from '../hooks/useGoals'
 import '../components/nutrition/nutrition.css'
 import './DashboardPage.css'
@@ -134,7 +135,10 @@ export default function DashboardPage() {
       <div className="container dashboard">
 
         {/* Banner de metas */}
-        {goalsEnabled && (
+        {goalsEnabled && activeGoals.length === 0 && (
+          <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
+        )}
+        {goalsEnabled && activeGoals.length > 0 && (
           <GoalSummaryBanner
             weeklyGoal={weeklyGoal}
             goodDays={goodDays}
