@@ -89,7 +89,10 @@ serve(async (req: Request) => {
         .select('id')
         .single()
 
-      if (mealErr || !meal) continue
+      if (mealErr || !meal) {
+        console.error('[nutrition-apply-plan] meal insert error:', mealErr?.message, 'refeicao:', ref.nome)
+        continue
+      }
       const mealId = meal.id
 
       // 4b. Criar itens da refeição
@@ -141,13 +144,16 @@ serve(async (req: Request) => {
           nome: nomeHabito,
           categoria: 'alimentacao',
           icone,
-          unidade: null,
+          ativo: true,
           nutrition_meal_id: mealId,
         })
         .select('id')
         .single()
 
-      if (habitErr || !habit) continue
+      if (habitErr || !habit) {
+        console.error('[nutrition-apply-plan] habit insert error:', habitErr?.message, 'meal:', nomeHabito)
+        continue
+      }
       habitIds.push(habit.id)
 
       // 4e. Criar habit_schedule no horário da refeição
