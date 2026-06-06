@@ -515,6 +515,7 @@ Refeições viram hábitos de categoria `alimentacao` com `nutrition_meal_id` FK
 - Cards de refeição aparecem no Dashboard com setinha para expandir detalhes
 - Sem emoji no `NutritionMealCard` (hábitos normais mantêm emoji)
 - `apply-plan` desativa hábitos alimentação antigos automaticamente
+- Drawer de troca (`MealSwapDrawer`) compacto no mobile: `padding-bottom` com `safe-area-inset-bottom`, botões sempre visíveis, `rows=1` no textarea, padding reduzido nos botões de motivo
 
 ---
 
