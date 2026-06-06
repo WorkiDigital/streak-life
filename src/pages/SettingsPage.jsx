@@ -668,7 +668,7 @@ export default function SettingsPage() {
         {/* Plano Alimentar */}
         <section className="settings-section">
           <h2 className="settings-section-title">🥗 Plano Alimentar</h2>
-          <div className="glass-card" style={{ overflow: 'hidden' }}>
+          <div className="settings-card glass-card" style={{ overflow: 'hidden' }}>
             <div className={`settings-row ${nutritionSaving ? 'settings-row-disabled' : ''}`} onClick={handleNutritionToggle}>
               <div className="settings-row-info">
                 <span className="settings-row-label">Plano alimentar ativo</span>

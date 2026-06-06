@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LogIn, UserPlus, Mail, Lock, Loader2, Eye, EyeOff, Sprout, CheckCircle2 } from 'lucide-react'
+import { LogIn, UserPlus, Mail, Lock, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import './LoginPage.css'
 
 export default function LoginPage() {
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
       <div className="login-container">
         <div className="login-hero">
-          <Sprout className="login-logo-icon" size={48} strokeWidth={2.4} />
+          <img src="/favicon.svg" alt="Streak Life Logo" className="login-logo-icon" width="64" height="64" />
           <h1 className="login-logo-text">Streak Life</h1>
           <p className="login-tagline">
             Consistência vence intensidade.

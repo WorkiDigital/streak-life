@@ -515,3 +515,13 @@ Refeições viram hábitos de categoria `alimentacao` com `nutrition_meal_id` FK
 - Cards de refeição aparecem no Dashboard com setinha para expandir detalhes
 - Sem emoji no `NutritionMealCard` (hábitos normais mantêm emoji)
 - `apply-plan` desativa hábitos alimentação antigos automaticamente
+
+---
+
+## Atualização 2026-06-05 (sessão 4 — Ajustes de UI/UX, Logo e Layout)
+
+### Resumo das alterações
+- **Remoção de rolagem dupla no Chat (`src/pages/ChatPage.css`):** Estrutura de flexbox do chat foi corrigida para manter a barra de rolagem unicamente dentro da caixa de mensagens. O layout externo foi compactado para evitar a necessidade de rolagem da tela inteira, proporcionando uma interface mobile e desktop mais fluida.
+- **Logotipo com fundo transparente (`public/favicon.svg`):** Removido o retângulo escuro `<rect>` de fundo do arquivo do favicon, deixando apenas o objeto (folha verde/broto) com fundo transparente, garantindo versatilidade na sua exibição em diferentes superfícies.
+- **Identidade visual no Login (`src/pages/LoginPage.jsx`):** O ícone de árvore genérico `<Sprout>` da biblioteca Lucide foi substituído pelo logotipo oficial transparente em SVG (`/favicon.svg`) com dimensões ampliadas e alta definição (64x64px), garantindo coerência de marca e visual premium.
+- **Ajuste de espaçamento em Configurações (`src/pages/SettingsPage.jsx`):** Adicionada a classe `settings-card` na seção do "Plano Alimentar", corrigindo o espaçamento (padding) do bloco para ficar idêntico aos demais cards de configurações.
