@@ -383,11 +383,12 @@
   width: 100%;
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  max-height: 90dvh;
+  gap: var(--space-3);
+  max-height: 85dvh;
   overflow: hidden;
 }
 
@@ -417,16 +418,17 @@
 }
 
 .swap-reason-btn {
-  padding: 10px var(--space-4);
+  padding: 8px var(--space-3);
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border);
   background: transparent;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .swap-reason-btn.selected {

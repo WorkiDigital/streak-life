@@ -50,7 +50,7 @@ export default function MealSwapDrawer({ meal, onClose, onLogged }) {
 
         <textarea
           className="swap-input"
-          rows={2}
+          rows={1}
           placeholder="O que você tem disponível? (opcional)"
           value={extra}
           onChange={e => setExtra(e.target.value)}
