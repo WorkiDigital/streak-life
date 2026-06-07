@@ -140,7 +140,7 @@ const SECTION_META = {
   },
 }
 
-const DEFAULT_OPEN_SECTIONS = ['notifications', 'nutrition', 'goals']
+const DEFAULT_OPEN_SECTIONS = []
 
 const DEFAULT_PROFILE_FORM = {
   nome: '',
