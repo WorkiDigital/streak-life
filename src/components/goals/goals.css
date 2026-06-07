@@ -158,6 +158,21 @@
   color: var(--color-text-primary);
 }
 
+.goal-progress-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.goal-progress-meta span {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
 .goal-progress-bar-wrap {
   display: flex;
   align-items: center;
@@ -184,4 +199,199 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.goal-action-btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-done-subtle);
+  color: var(--color-done);
+  border: 1px solid color-mix(in srgb, var(--color-done) 35%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.goal-action-btn.secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.goal-action-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* --- CreateGoalModal --- */
+.goal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.goal-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.goal-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.goal-modal-header h2 {
+  margin: 0 0 4px;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+.goal-modal-header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.goal-modal-close {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.goal-form-grid,
+.goal-tracking-step {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.goal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.goal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.goal-field.full {
+  grid-column: 1 / -1;
+}
+
+.goal-field span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.goal-field input,
+.goal-field select {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.goal-tracking-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.goal-tracking-options {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.goal-tracking-option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.goal-tracking-option span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.goal-tracking-option.active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-secondary));
+}
+
+.goal-day-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-2);
+}
+
+.goal-day-picker button {
+  height: 38px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.goal-day-picker button.active {
+  border-color: var(--color-accent);
+  background: var(--color-done-subtle);
+  color: var(--color-done);
+}
+
+.goal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) 0 calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  .goal-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-modal-actions {
+    flex-direction: column-reverse;
+  }
 }

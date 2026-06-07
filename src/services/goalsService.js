@@ -8,5 +8,6 @@ async function invoke(fn, body = {}) {
 
 export const generateGoals = () => invoke('goals-generate')
 export const applyGoals = (goals) => invoke('goals-apply', { goals })
+export const createGoal = (payload) => invoke('goals-create', payload)
 export const getDashboard = () => invoke('goals-get-dashboard')
 export const logGoal = (payload) => invoke('goals-log', payload)

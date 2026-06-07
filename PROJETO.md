@@ -526,3 +526,54 @@ Refeições viram hábitos de categoria `alimentacao` com `nutrition_meal_id` FK
 - **Logotipo com fundo transparente (`public/favicon.svg`):** Removido o retângulo escuro `<rect>` de fundo do arquivo do favicon, deixando apenas o objeto (folha verde/broto) com fundo transparente, garantindo versatilidade na sua exibição em diferentes superfícies.
 - **Identidade visual no Login (`src/pages/LoginPage.jsx`):** O ícone de árvore genérico `<Sprout>` da biblioteca Lucide foi substituído pelo logotipo oficial transparente em SVG (`/favicon.svg`) com dimensões ampliadas e alta definição (64x64px), garantindo coerência de marca e visual premium.
 - **Ajuste de espaçamento em Configurações (`src/pages/SettingsPage.jsx`):** Adicionada a classe `settings-card` na seção do "Plano Alimentar", corrigindo o espaçamento (padding) do bloco para ficar idêntico aos demais cards de configurações.
+
+---
+
+## Atualizacao 2026-06-06 (metas independentes + plano alimentar acessivel)
+
+### Resumo
+- Implementada a primeira versao do sistema de metas independentes de lembretes.
+- Metas agora podem ser criadas em tres modos: `manual`, `linked_habit` e `habit_with_reminder`.
+- Plano alimentar ficou mais acessivel no Inicio e em Configuracoes.
+- Troca de refeicao ficou mais clara, com sugestao selecionada visivel e botoes sempre acessiveis.
+
+### Banco de dados
+- Migration criada: `supabase/migrations/20260606210905_goal_tracking_modes.sql`.
+- Campos adicionados:
+  - `goals.tracking_mode text default 'manual'`
+  - `goals.reminders_enabled boolean default false`
+  - `profiles.default_goal_tracking_mode text default 'ask'`
+- Constraints adicionadas para validar modos aceitos.
+- Migration aplicada no Supabase remoto via `supabase db query --linked`, porque `supabase db push --linked` encontrou historico antigo desalinhado na migration `003`.
+- Migration `20260606210905` marcada como aplicada com `supabase migration repair --status applied 20260606210905 --linked`.
+
+### Edge Functions
+- Nova funcao: `supabase/functions/goals-create/index.ts`.
+- Funcoes ajustadas:
+  - `goals-apply`: metas geradas pela IA nao criam lembrete automaticamente; se tiver `habit_ids`, viram `linked_habit`, senao `manual`.
+  - `goals-log`: aceita `goal_id` para progresso manual e mantem `habit_id` para metas conectadas.
+  - `goals-get-dashboard`: retorna `tracking_mode`, `reminders_enabled` e `linked_habits`.
+- Deploy remoto feito no projeto `rldqzqyhqsftwaiyfbwx`:
+  - `goals-create` v1
+  - `goals-apply` v4
+  - `goals-log` v7
+  - `goals-get-dashboard` v6
+
+### Frontend de metas
+- Novo componente: `src/components/goals/CreateGoalModal.jsx`.
+- Aba Progresso ganhou botao `Criar meta`.
+- Modal guiado permite criar meta manual, conectar meta a habito existente ou criar meta + habito + lembrete.
+- `GoalProgressCard` agora exibe modo de acompanhamento, status de lembrete, habito conectado e acao principal por tipo de meta.
+- Meta manual permite `Registrar progresso` pela UI.
+
+### Plano alimentar e refeicoes
+- Inicio ganhou card compacto `Plano alimentar de hoje`, com resumo de refeicoes e atalho para ver o plano.
+- Configuracoes ganhou atalhos reais para ver plano no Inicio e editar habitos relacionados.
+- `NutritionMealCard` agora usa atualizacao otimista ao marcar refeicao, removendo o atraso visual do `...`.
+- `MealSwapDrawer` mostra sugestoes da IA de forma clicavel, com check e texto `Selecionado`, alem de manter os botoes acima da navegacao inferior.
+
+### Validacoes
+- `npm run build` passou.
+- Bundle/syntax check com `esbuild` passou para `goals-create`, `goals-log` e `goals-apply`.
+- Colunas remotas validadas via `information_schema`.
+- Funcoes remotas validadas via `supabase functions list`.

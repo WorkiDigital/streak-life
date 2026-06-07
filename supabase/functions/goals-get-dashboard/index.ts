@@ -34,7 +34,7 @@ serve(async (req: Request) => {
     // Buscar metas ativas
     const { data: goals } = await admin
       .from('goals')
-      .select('id, title, description, category, type, target_value, current_value, unit, frequency, status, priority')
+      .select('id, title, description, category, type, target_value, current_value, unit, frequency, status, priority, tracking_mode, reminders_enabled')
       .eq('user_id', userId)
       .in('status', ['active', 'completed'])
       .order('priority', { ascending: false })
@@ -52,6 +52,19 @@ serve(async (req: Request) => {
       .in('goal_id', goalIds)
       .gte('date', weekStartStr)
       .lte('date', today)
+
+    const { data: goalHabits } = await admin
+      .from('goal_habits')
+      .select('goal_id, habit_id, habits(id, nome, categoria)')
+      .eq('user_id', userId)
+      .in('goal_id', goalIds)
+
+    const habitsByGoal = new Map<string, unknown[]>()
+    for (const relation of goalHabits ?? []) {
+      const list = habitsByGoal.get(relation.goal_id) ?? []
+      list.push(relation.habits)
+      habitsByGoal.set(relation.goal_id, list)
+    }
 
     // Contar dias bons da semana
     const goodDays = new Set(
@@ -72,6 +85,7 @@ serve(async (req: Request) => {
       return {
         ...goal,
         week_progress: weekProgress,
+        linked_habits: habitsByGoal.get(goal.id) ?? [],
       }
     })
 

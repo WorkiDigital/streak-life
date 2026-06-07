@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
-import { X, Share2 } from 'lucide-react'
+import { X, Share2, Plus } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
 import { useToast } from '../contexts/ToastContext'
 import HabitHeatmap from '../components/habits/HabitHeatmap'
 import GoalProgressCard from '../components/goals/GoalProgressCard'
+import CreateGoalModal from '../components/goals/CreateGoalModal'
 import { useGoals } from '../hooks/useGoals'
 import './ProgressPage.css'
 
@@ -27,9 +28,10 @@ export default function ProgressPage() {
   const [period, setPeriod] = useState(30)
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [selectedHabit, setSelectedHabit] = useState(null)
-  const { getHeatmapData, getStats, getWeeklyStats, schedules, logs, loading } = useHabits()
+  const [showGoalModal, setShowGoalModal] = useState(false)
+  const { getHeatmapData, getStats, getWeeklyStats, schedules, habits, logs, loading, refreshData } = useHabits()
   const toast = useToast()
-  const { goalsEnabled, activeGoals, weeklyGoal, goodDays } = useGoals()
+  const { goalsEnabled, activeGoals, weeklyGoal, goodDays, refresh: refreshGoals } = useGoals()
   const { matrix, dates } = useMemo(() => getHeatmapData(period), [logs, schedules, period])
   const stats = useMemo(() => getStats(period), [logs, schedules, period])
   const weeklyData = useMemo(() => getWeeklyStats(8), [logs, schedules])
@@ -51,6 +53,10 @@ export default function ProgressPage() {
     }
   }
 
+  async function handleGoalCreated() {
+    await Promise.allSettled([refreshGoals(), refreshData()])
+  }
+
   return (
     <div className="page">
       <div className="container progress-page">
@@ -68,6 +74,14 @@ export default function ProgressPage() {
                 </button>
               ))}
             </div>
+            <button
+              className="btn btn-secondary btn-icon-text"
+              onClick={() => setShowGoalModal(true)}
+              aria-label="Criar meta"
+            >
+              <Plus size={17} />
+              <span>Criar meta</span>
+            </button>
             <button
               className="btn btn-ghost btn-icon"
               onClick={handleShare}
@@ -93,15 +107,24 @@ export default function ProgressPage() {
         </div>
 
         {/* Metas */}
-        {goalsEnabled && activeGoals.length > 0 && (
+        {goalsEnabled !== false && (
           <section>
-            <h2 className="text-sm font-semibold text-secondary" style={{ marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Metas {weeklyGoal ? `— ${goodDays} dias bons esta semana` : ''}
-            </h2>
+            <div className="progress-section-heading">
+              <h2>Metas</h2>
+              {weeklyGoal && <span>{goodDays} dias bons esta semana</span>}
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {activeGoals.map(goal => (
-                <GoalProgressCard key={goal.id} goal={goal} />
-              ))}
+              {activeGoals.length > 0 ? (
+                activeGoals.map(goal => (
+                  <GoalProgressCard key={goal.id} goal={goal} onUpdated={refreshGoals} />
+                ))
+              ) : (
+                <div className="progress-empty-goals glass-card">
+                  <strong>Nenhuma meta criada ainda</strong>
+                  <span>Crie uma meta simples, conecte a um habito existente ou crie uma meta com lembrete.</span>
+                  <button className="btn btn-primary" onClick={() => setShowGoalModal(true)}>Criar primeira meta</button>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -293,6 +316,14 @@ export default function ProgressPage() {
           </div>
         )}
       </div>
+
+      {showGoalModal && (
+        <CreateGoalModal
+          habits={habits}
+          onClose={() => setShowGoalModal(false)}
+          onCreated={handleGoalCreated}
+        />
+      )}
     </div>
   )
 }

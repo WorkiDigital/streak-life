@@ -6,12 +6,16 @@ serve(async (req: Request) => {
 
   try {
     const { user, error: authError } = await getUserFromRequest(req)
-    if (authError || !user) return jsonResponse({ error: 'Não autenticado' }, { status: 401 })
+    if (authError || !user) return jsonResponse({ error: 'Nao autenticado' }, { status: 401 })
 
     const body = await req.json()
-    const habitId = body.habit_id
+    const habitId = body.habit_id as string | undefined
+    const goalId = body.goal_id as string | undefined
     const undo = body.undo === true
-    if (!habitId) return jsonResponse({ error: 'habit_id é obrigatório' }, { status: 400 })
+
+    if (!habitId && !goalId) {
+      return jsonResponse({ error: 'goal_id ou habit_id e obrigatorio' }, { status: 400 })
+    }
 
     const admin = getAdminClient()
     const userId = user.id
@@ -27,10 +31,14 @@ serve(async (req: Request) => {
     const date = body.date ?? todayInTimezone(profile?.timezone)
     const threshold = profile?.consistency_threshold ?? 0.7
 
-    // Buscar metas conectadas ao hábito
+    if (goalId) {
+      await updateManualGoal(admin, userId, goalId, date, Number(body.value ?? 1), undo)
+      return jsonResponse({ ok: true })
+    }
+
     const { data: goalHabits } = await admin
       .from('goal_habits')
-      .select('goal_id, goals(id, type, frequency, target_value, current_value, category)')
+      .select('goal_id, goals(id, type, frequency, target_value, current_value, category, tracking_mode)')
       .eq('habit_id', habitId)
       .eq('user_id', userId)
 
@@ -39,55 +47,9 @@ serve(async (req: Request) => {
     for (const gh of goalHabits) {
       const goal = gh.goals as Record<string, unknown>
       if (!goal) continue
-
-      const goalId = goal.id as string
-
-      // Buscar log existente do dia
-      const { data: existingLog } = await admin
-        .from('goal_logs')
-        .select('id, value')
-        .eq('goal_id', goalId)
-        .eq('user_id', userId)
-        .eq('date', date)
-        .maybeSingle()
-
-      if (undo) {
-        // Decrementar — se chegar a 0, remover o log
-        const newValue = Math.max(0, Number(existingLog?.value ?? 0) - 1)
-        if (newValue === 0 && existingLog) {
-          await admin.from('goal_logs').delete().eq('id', existingLog.id)
-        } else if (existingLog) {
-          await admin.from('goal_logs').update({ value: newValue, status: 'logged' }).eq('id', existingLog.id)
-        }
-        const targetValue = Number(goal.target_value ?? 0)
-        await admin.from('goals').update({
-          current_value: Math.max(0, Number(goal.current_value ?? 0) - 1),
-          status: targetValue > 0 && newValue >= targetValue ? 'completed' : 'active',
-          updated_at: new Date().toISOString(),
-        }).eq('id', goalId)
-      } else {
-        // Incrementar
-        const currentValue = Number(existingLog?.value ?? 0) + 1
-        await admin.from('goal_logs').upsert({
-          goal_id: goalId,
-          user_id: userId,
-          date,
-          value: currentValue,
-          status: 'logged',
-        }, { onConflict: 'goal_id,user_id,date' })
-
-        const targetValue = Number(goal.target_value ?? 0)
-        const newStatus = targetValue > 0 && currentValue >= targetValue ? 'completed' : undefined
-        const updatePayload: Record<string, unknown> = {
-          current_value: currentValue,
-          updated_at: new Date().toISOString(),
-        }
-        if (newStatus) updatePayload.status = newStatus
-        await admin.from('goals').update(updatePayload).eq('id', goalId)
-      }
+      await updateGoalProgress(admin, userId, goal, date, 1, undo, 'logged')
     }
 
-    // Recalcular dia bom (tanto ao marcar quanto ao desmarcar)
     await updateConsistencyGoal(admin, userId, date, threshold)
 
     return jsonResponse({ ok: true })
@@ -98,15 +60,78 @@ serve(async (req: Request) => {
   }
 })
 
+async function updateManualGoal(
+  admin: ReturnType<typeof getAdminClient>,
+  userId: string,
+  goalId: string,
+  date: string,
+  value: number,
+  undo: boolean
+) {
+  const { data: goal } = await admin
+    .from('goals')
+    .select('id, target_value, current_value, tracking_mode')
+    .eq('id', goalId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (!goal) throw new Error('Meta nao encontrada')
+  await updateGoalProgress(admin, userId, goal, date, value, undo, 'manual')
+}
+
+async function updateGoalProgress(
+  admin: ReturnType<typeof getAdminClient>,
+  userId: string,
+  goal: Record<string, unknown>,
+  date: string,
+  value: number,
+  undo: boolean,
+  status: string
+) {
+  const goalId = goal.id as string
+  const amount = Number.isFinite(value) && value > 0 ? value : 1
+
+  const { data: existingLog } = await admin
+    .from('goal_logs')
+    .select('id, value')
+    .eq('goal_id', goalId)
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+
+  const currentLogValue = Number(existingLog?.value ?? 0)
+  const nextLogValue = undo ? Math.max(0, currentLogValue - amount) : currentLogValue + amount
+  const currentGoalValue = Number(goal.current_value ?? 0)
+  const nextGoalValue = undo ? Math.max(0, currentGoalValue - amount) : currentGoalValue + amount
+  const targetValue = Number(goal.target_value ?? 0)
+
+  if (nextLogValue === 0) {
+    if (existingLog) await admin.from('goal_logs').delete().eq('id', existingLog.id)
+  } else {
+    await admin.from('goal_logs').upsert({
+      goal_id: goalId,
+      user_id: userId,
+      date,
+      value: nextLogValue,
+      status,
+    }, { onConflict: 'goal_id,user_id,date' })
+  }
+
+  await admin.from('goals').update({
+    current_value: nextGoalValue,
+    status: targetValue > 0 && nextGoalValue >= targetValue ? 'completed' : 'active',
+    updated_at: new Date().toISOString(),
+  }).eq('id', goalId)
+}
+
 async function updateConsistencyGoal(
   admin: ReturnType<typeof getAdminClient>,
   userId: string,
   date: string,
   threshold: number
 ) {
-  // Hábitos esperados = schedules ativos que disparam no dia da semana do date
   const dateObj = new Date(date + 'T12:00:00Z')
-  const dayOfWeek = dateObj.getDay() // 0=dom … 6=sab
+  const dayOfWeek = dateObj.getDay()
 
   const { data: expectedSchedules } = await admin
     .from('habit_schedules')
@@ -115,22 +140,18 @@ async function updateConsistencyGoal(
     .eq('ativo', true)
     .contains('dias_semana', [dayOfWeek])
 
-  const totalEsperado = expectedSchedules?.length ?? 0
-  if (totalEsperado === 0) return
+  const totalExpected = expectedSchedules?.length ?? 0
+  if (totalExpected === 0) return
 
-  // Hábitos feitos no dia (logs com status feito)
   const { data: todayLogs } = await admin
     .from('habit_logs')
     .select('status')
     .eq('user_id', userId)
     .eq('data', date)
 
-  const feitos = (todayLogs ?? []).filter(l => l.status === 'feito').length
-  const isGoodDay = feitos / totalEsperado >= threshold
+  const done = (todayLogs ?? []).filter(l => l.status === 'feito').length
+  const isGoodDay = done / totalExpected >= threshold
 
-  if (!isGoodDay) return
-
-  // Buscar meta de consistência ativa
   const { data: consistencyGoal } = await admin
     .from('goals')
     .select('id, target_value, current_value')
@@ -143,31 +164,39 @@ async function updateConsistencyGoal(
 
   if (!consistencyGoal) return
 
-  // Upsert log de dia bom
   const { data: existingLog } = await admin
     .from('goal_logs')
     .select('id')
     .eq('goal_id', consistencyGoal.id)
     .eq('user_id', userId)
     .eq('date', date)
+    .eq('status', 'good_day')
     .maybeSingle()
 
-  if (existingLog) return // já registrado
+  if (isGoodDay && !existingLog) {
+    await admin.from('goal_logs').insert({
+      goal_id: consistencyGoal.id,
+      user_id: userId,
+      date,
+      value: 1,
+      status: 'good_day',
+    })
 
-  await admin.from('goal_logs').insert({
-    goal_id: consistencyGoal.id,
-    user_id: userId,
-    date,
-    value: 1,
-    status: 'good_day',
-  })
+    const newValue = Number(consistencyGoal.current_value ?? 0) + 1
+    const targetValue = Number(consistencyGoal.target_value ?? 0)
+    await admin.from('goals').update({
+      current_value: newValue,
+      status: targetValue > 0 && newValue >= targetValue ? 'completed' : 'active',
+      updated_at: new Date().toISOString(),
+    }).eq('id', consistencyGoal.id)
+  }
 
-  const newValue = Number(consistencyGoal.current_value ?? 0) + 1
-  const targetValue = Number(consistencyGoal.target_value ?? 0)
-
-  await admin.from('goals').update({
-    current_value: newValue,
-    status: targetValue > 0 && newValue >= targetValue ? 'completed' : 'active',
-    updated_at: new Date().toISOString(),
-  }).eq('id', consistencyGoal.id)
+  if (!isGoodDay && existingLog) {
+    await admin.from('goal_logs').delete().eq('id', existingLog.id)
+    await admin.from('goals').update({
+      current_value: Math.max(0, Number(consistencyGoal.current_value ?? 0) - 1),
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }).eq('id', consistencyGoal.id)
+  }
 }

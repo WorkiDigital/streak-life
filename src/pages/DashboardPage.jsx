@@ -55,6 +55,10 @@ export default function DashboardPage() {
     await Promise.allSettled([refreshNutrition(), refreshData()])
   }
 
+  function scrollToTodayPlan() {
+    document.getElementById('today-habit-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const nutritionMealsMap = useMemo(() => {
     const map = {}
     for (const meal of nutritionData?.meals ?? []) {
@@ -176,8 +180,28 @@ export default function DashboardPage() {
             />
           </div>
 
+          {nutritionData?.meals?.length > 0 && (
+            <div className="nutrition-today-card glass-card">
+              <div className="nutrition-today-head">
+                <div>
+                  <h3>Plano alimentar de hoje</h3>
+                  <p>{nutritionData.meals.filter(meal => meal.log?.status === 'feito' || meal.log?.status === 'adaptado').length} de {nutritionData.meals.length} refeicoes concluidas</p>
+                </div>
+                <button className="btn btn-secondary" onClick={scrollToTodayPlan}>Ver plano</button>
+              </div>
+              <div className="nutrition-today-list">
+                {nutritionData.meals.slice(0, 4).map(meal => (
+                  <button key={meal.id} className="nutrition-today-row" onClick={scrollToTodayPlan}>
+                    <span>{meal.nome}</span>
+                    <strong>{meal.horario?.slice(0, 5) ?? '--:--'}</strong>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Habit cards */}
-          <div className="habit-list">
+          <div className="habit-list" id="today-habit-list">
             {todayHabits.length === 0 ? (
               <div className="empty-today glass-card">
                 <span style={{ fontSize: '2rem' }}>🌟</span>

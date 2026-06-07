@@ -491,6 +491,19 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleDefaultGoalModeChange(mode) {
+    if (goalsSaving) return
+    setGoalsSaving(true)
+    try {
+      await updateProfile({ default_goal_tracking_mode: mode })
+      toast.success('Padrao de criacao de meta atualizado')
+    } catch {
+      toast.error('Erro ao atualizar padrao de metas')
+    } finally {
+      setGoalsSaving(false)
+    }
+  }
+
   async function handleNutritionToggle() {
     if (nutritionSaving) return
     setNutritionSaving(true)
@@ -875,6 +888,26 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+
+              {profile?.nutrition_enabled && (
+                <>
+                  <div className="settings-divider" />
+                  <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                    <div className="settings-row-info">
+                      <span className="settings-row-label">Acessar plano</span>
+                      <span className="settings-row-desc">O plano aparece no Inicio e as refeicoes continuam nos habitos do dia.</span>
+                    </div>
+                    <div className="settings-channel-list">
+                      <button type="button" className="channel-toggle active" onClick={() => navigate('/')}>
+                        Ver no Inicio
+                      </button>
+                      <button type="button" className="channel-toggle" onClick={() => navigate('/habits')}>
+                        Editar habitos
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </SettingsSection>
         )}
@@ -912,6 +945,32 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {profile?.goals_enabled !== false && (
+                <>
+                  <div className="settings-divider" />
+                  <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                    <span className="settings-row-label">Padrao ao criar meta</span>
+                    <span className="settings-row-desc">Nenhum lembrete novo sera criado sem confirmacao.</span>
+                    <div className="settings-channel-list">
+                      {[
+                        { v: 'ask', l: 'Sempre perguntar' },
+                        { v: 'manual', l: 'Meta manual' },
+                        { v: 'linked_habit', l: 'Conectar habito' },
+                      ].map(m => (
+                        <button
+                          key={m.v}
+                          className={`channel-toggle ${(profile?.default_goal_tracking_mode ?? 'ask') === m.v ? 'active' : ''}`}
+                          onClick={() => handleDefaultGoalModeChange(m.v)}
+                          disabled={goalsSaving}
+                        >
+                          {m.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </SettingsSection>

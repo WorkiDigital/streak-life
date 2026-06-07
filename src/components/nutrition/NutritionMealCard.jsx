@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { logMeal } from '../../services/nutritionService'
 import { useToast } from '../../contexts/ToastContext'
 import MealSwapDrawer from './MealSwapDrawer'
@@ -17,17 +17,24 @@ function formatQty(item) {
 export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [optimisticStatus, setOptimisticStatus] = useState(null)
   const [showSwap, setShowSwap] = useState(false)
   const toast = useToast()
 
-  const status = meal.log?.status ?? null
+  const status = optimisticStatus ?? meal.log?.status ?? null
   const isDone = status === 'feito' || status === 'adaptado'
   const isPulou = status === 'pulou'
   const showMacros = (mode === 'detalhado' || mode === 'profissional') &&
     (meal.proteina_g || meal.carboidrato_g || meal.gordura_g || meal.calorias_estimadas)
 
+  useEffect(() => {
+    setOptimisticStatus(null)
+  }, [meal.log?.status])
+
   async function handleMark(newStatus) {
     if (saving) return
+    const previousStatus = status
+    setOptimisticStatus(newStatus)
     setSaving(true)
     try {
       await logMeal({ meal_id: meal.id, status: newStatus })
@@ -40,6 +47,7 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
       }
       toast.success(messages[newStatus] ?? 'Refeição atualizada')
     } catch (err) {
+      setOptimisticStatus(previousStatus)
       toast.error(`Erro ao atualizar refeição: ${err.message}`)
       console.error(err)
     } finally {
@@ -72,7 +80,7 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
               disabled={saving}
               title={isDone ? 'Desmarcar' : 'Marcar como feito'}
             >
-              {saving ? '…' : isDone ? '✓' : '○'}
+              {isDone ? '✓' : '○'}
             </button>
             <button className={`nm-expand-btn ${open ? 'open' : ''}`} onClick={() => setOpen(o => !o)}>
               ▾
