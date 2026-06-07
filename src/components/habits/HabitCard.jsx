@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Check, Clock, X, Loader2, ChevronDown } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Check, Clock, X, Loader2, ChevronDown, PenLine } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
 import { useToast } from '../../contexts/ToastContext'
 import NutritionMealCard from '../nutrition/NutritionMealCard'
 import './HabitCard.css'
+
+const LONG_PRESS_MS = 500
 
 export default function HabitCard({ schedule, nutritionMeal = null, nutritionMode = 'simples', nutritionDate = null, onNutritionLogged }) {
   const [animating, setAnimating] = useState(false)
@@ -15,6 +17,8 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
   const [nota, setNota] = useState('')
   const { markDone, undoMark } = useHabits()
   const toast = useToast()
+  const longPressTimer = useRef(null)
+  const didLongPress = useRef(false)
 
   const habit = schedule.habit || schedule.habits
   const hasNutrition = !!(habit?.nutrition_meal_id && nutritionMeal)
@@ -27,31 +31,41 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
   const currentCount = isMulti && rawCount > 0 && rawCount <= totalHorarios ? rawCount : 0
   const allDone = isDone
 
-  async function handleToggle() {
+  function openExtras() {
+    setShowNutrition(false)
+    setShowExtra(true)
+  }
+
+  function startLongPress() {
+    didLongPress.current = false
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true
+      if (!isDone && !isMulti && !hasNutrition) openExtras()
+    }, LONG_PRESS_MS)
+  }
+
+  function cancelLongPress() {
+    clearTimeout(longPressTimer.current)
+  }
+
+  // Ação primária do botão de check: marca direto, sem modal
+  async function handleCheckPress() {
     if (saving) return
     setSaving(true)
     try {
       if (isDone) {
         await undoMark(schedule.habit_id)
         toast.success('Hábito desmarcado')
-      } else if (isMulti) {
-        // Multi-horário: incrementa direto, sem mini-modal
+      } else {
         setAnimating(true)
         setTimeout(() => setAnimating(false), 600)
         await markDone(schedule.habit_id, new Date(), { totalHorarios })
-        const next = currentCount + 1
-        if (next >= totalHorarios) {
-          toast.success(`${habit?.nome} completo! ✨`)
+        if (!isMulti || currentCount + 1 >= totalHorarios) {
+          toast.success(`${habit?.nome} marcado! ✨`)
         }
-      } else {
-        setAnimating(true)
-        setShowNutrition(false)
-        setShowExtra(true)
-        setTimeout(() => setAnimating(false), 600)
       }
     } catch (err) {
       toast.error(`Erro ao atualizar hábito: ${err.message}`)
-      console.error(err)
     } finally {
       setSaving(false)
     }
@@ -69,7 +83,6 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
       toast.success(`${habit?.nome} marcado! ✨`)
     } catch (err) {
       toast.error(`Erro ao salvar hábito: ${err.message}`)
-      console.error(err)
     } finally {
       setConfirming(false)
       setShowExtra(false)
@@ -82,6 +95,12 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
     <>
       <div
         className={`habit-card glass-card ${allDone ? 'done' : ''} ${isMissed ? 'missed' : ''} ${animating ? 'animate-burst' : ''}`}
+        onMouseDown={startLongPress}
+        onMouseUp={cancelLongPress}
+        onMouseLeave={cancelLongPress}
+        onTouchStart={startLongPress}
+        onTouchEnd={cancelLongPress}
+        onTouchCancel={cancelLongPress}
       >
         <div className="habit-card-info">
           <span className="habit-card-icon">{habit?.icone || '📋'}</span>
@@ -109,6 +128,17 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
           </div>
         </div>
 
+        {/* Botão de extras (lápis) — só para hábitos fixos sem nutrição */}
+        {!isMulti && !hasNutrition && !isDone && (
+          <button
+            className="habit-card-expand-btn"
+            onClick={e => { e.stopPropagation(); openExtras() }}
+            aria-label="Adicionar detalhe"
+          >
+            <PenLine size={15} />
+          </button>
+        )}
+
         {hasNutrition && (
           <button
             className="habit-card-expand-btn"
@@ -121,7 +151,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
 
         <button
           className={`habit-card-btn ${allDone ? 'btn-done' : 'btn-pending'}`}
-          onClick={handleToggle}
+          onClick={handleCheckPress}
           disabled={saving}
           aria-label={allDone ? 'Desmarcar hábito' : isMulti ? `Registrar (${currentCount}/${totalHorarios})` : 'Marcar como feito'}
           aria-busy={saving}
@@ -141,7 +171,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         </button>
       </div>
 
-      {/* Painel de nutrição expansível — inline no card */}
+      {/* Painel de nutrição expansível */}
       {hasNutrition && showNutrition && (
         <NutritionMealCard
           meal={{ ...nutritionMeal, log: schedule.log?.nutrition_meal_log ?? nutritionMeal.log }}
@@ -151,7 +181,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         />
       )}
 
-      {/* Mini-modal de valor/nota — apenas para hábitos de horário fixo sem nutrição */}
+      {/* Painel de extras — abre via lápis ou long-press */}
       {showExtra && !isMulti && !hasNutrition && (
         <div className="habit-extra-panel glass-card">
           <div className="habit-extra-header">

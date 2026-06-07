@@ -79,12 +79,12 @@ const STRESS_OPTIONS = [
 ]
 
 const ROUTINE_FIELDS = [
-  { field: 'horario_acordar', label: 'Acordar' },
-  { field: 'horario_dormir', label: 'Dormir' },
-  { field: 'cafe', label: 'Cafe' },
-  { field: 'almoco', label: 'Almoco' },
-  { field: 'jantar', label: 'Jantar' },
-  { field: 'lanche', label: 'Lanche' },
+  { field: 'horario_acordar', label: 'Acordar', icon: '🌅' },
+  { field: 'horario_dormir', label: 'Dormir', icon: '🌙' },
+  { field: 'cafe', label: 'Café', icon: '☕' },
+  { field: 'almoco', label: 'Almoço', icon: '🍽️' },
+  { field: 'jantar', label: 'Jantar', icon: '🌆' },
+  { field: 'lanche', label: 'Lanche', icon: '🍵' },
 ]
 
 const SECTION_META = {
@@ -322,28 +322,32 @@ export default function SettingsPage() {
     {
       id: 'notifications',
       label: 'Notificacoes',
-      value: isPushActive ? 'Push ativo' : 'Push inativo',
+      value: isPushActive ? 'Push ativo' : 'Ativar push',
       icon: <Bell size={16} />,
+      action: togglePushNotifications,
     },
     {
       id: 'nutrition',
       label: 'Plano alimentar',
       value: profile?.nutrition_enabled ? 'Ativo' : 'Desativado',
       icon: <Utensils size={16} />,
+      action: handleNutritionToggle,
     },
     {
       id: 'goals',
       label: 'Metas',
       value: profile?.goals_enabled !== false ? 'Ativas' : 'Pausadas',
       icon: <Target size={16} />,
+      action: handleGoalsToggle,
     },
     {
       id: 'routine',
       label: 'Rotina',
       value: profileForm.horario_acordar || 'Editar',
       icon: <Clock3 size={16} />,
+      action: () => jumpToSection('routine'),
     },
-  ]), [isPushActive, profile?.nutrition_enabled, profile?.goals_enabled, profileForm.horario_acordar])
+  ]), [isPushActive, profile?.nutrition_enabled, profile?.goals_enabled, profileForm.horario_acordar]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateField(field, value) {
     setProfileForm(prev => ({ ...prev, [field]: value }))
@@ -613,7 +617,7 @@ export default function SettingsPage() {
                 key={item.id}
                 type="button"
                 className="settings-shortcut"
-                onClick={() => jumpToSection(item.id)}
+                onClick={item.action}
               >
                 <span className="settings-shortcut-icon" aria-hidden="true">{item.icon}</span>
                 <span>
@@ -629,6 +633,10 @@ export default function SettingsPage() {
           <div className="settings-empty-search glass-card">
             Nenhuma configuracao encontrada para "{settingsQuery}".
           </div>
+        )}
+
+        {['personal', 'body', 'health'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label">Perfil</div>
         )}
 
         {isSectionVisible('personal') && (
@@ -720,13 +728,19 @@ export default function SettingsPage() {
           </SettingsSection>
         )}
 
+        {['routine', 'training', 'nutrition'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label">Rotina &amp; Saúde</div>
+        )}
+
         {isSectionVisible('routine') && (
           <SettingsSection id="routine" title={SECTION_META.routine.title} description={SECTION_META.routine.description} icon={<Clock3 size={18} />} open={isSectionOpen('routine')} onToggle={() => toggleSection('routine')}>
             <div className="settings-card glass-card">
               <div className="settings-routine-grid">
                 {ROUTINE_FIELDS.map(item => (
                   <label className="settings-routine-block" key={item.field}>
-                    <span className="settings-routine-label">{item.label}</span>
+                    <span className="settings-routine-label">
+                      <span aria-hidden="true">{item.icon}</span> {item.label}
+                    </span>
                     <input type="time" className="settings-routine-input" value={profileForm[item.field]} onChange={e => updateField(item.field, e.target.value)} />
                   </label>
                 ))}
@@ -791,6 +805,10 @@ export default function SettingsPage() {
               </div>
             </div>
           </SettingsSection>
+        )}
+
+        {['notifications', 'goals', 'appearance', 'about'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label">Aplicativo</div>
         )}
 
         {isSectionVisible('notifications') && (

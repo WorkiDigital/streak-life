@@ -61,6 +61,14 @@ export default function DashboardPage() {
   // Mostra banner quando: perfil carregado + nutrition não ativo + não dispensado
   // nutrition_enabled pode ser false, null ou undefined — todos significam "sem plano"
   const showNutritionBanner = !!profile && profile.nutrition_enabled !== true && !bannerDismissed
+
+  // Só 1 banner por vez — ordem de prioridade
+  const activeBanner = !goalsLoading
+    ? (goalsEnabled === false && activeGoals.length === 0) ? 'goals-setup'
+    : (activeGoals.length > 0)                            ? 'goals-summary'
+    : showNutritionBanner                                  ? 'nutrition'
+    : null
+    : null
   const today = useMemo(() => todayInTz(profile?.timezone), [profile?.timezone])
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
@@ -108,13 +116,13 @@ export default function DashboardPage() {
     return (
       <div className="page">
         <div className="container dashboard-loading">
-          {!goalsLoading && goalsEnabled !== false && activeGoals.length === 0 && (
+          {activeBanner === 'goals-setup' && (
             <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
           )}
-          {!goalsLoading && goalsEnabled !== false && activeGoals.length > 0 && (
+          {activeBanner === 'goals-summary' && (
             <GoalSummaryBanner weeklyGoal={weeklyGoal} goodDays={goodDays} activeGoals={activeGoals} />
           )}
-          {showNutritionBanner && (
+          {activeBanner === 'nutrition' && (
             <NutritionBanner onClick={() => setShowSetupModal(true)} onDismiss={dismissBanner} />
           )}
           {[1, 2, 3].map(i => (
@@ -145,20 +153,14 @@ export default function DashboardPage() {
       )}
       <div className="container dashboard">
 
-        {/* Banner de metas */}
-        {!goalsLoading && goalsEnabled !== false && activeGoals.length === 0 && (
+        {/* Banner — apenas 1 por vez, por prioridade */}
+        {activeBanner === 'goals-setup' && (
           <GoalsSetupBanner onActivated={() => { window.location.reload() }} />
         )}
-        {!goalsLoading && goalsEnabled !== false && activeGoals.length > 0 && (
-          <GoalSummaryBanner
-            weeklyGoal={weeklyGoal}
-            goodDays={goodDays}
-            activeGoals={activeGoals}
-          />
+        {activeBanner === 'goals-summary' && (
+          <GoalSummaryBanner weeklyGoal={weeklyGoal} goodDays={goodDays} activeGoals={activeGoals} />
         )}
-
-        {/* Banner nutricional */}
-        {showNutritionBanner && (
+        {activeBanner === 'nutrition' && (
           <NutritionBanner onClick={() => setShowSetupModal(true)} onDismiss={dismissBanner} />
         )}
 

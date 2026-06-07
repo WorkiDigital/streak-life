@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, CheckSquare, MessageCircle, BarChart3, Settings } from 'lucide-react'
+import { Home, CheckSquare, BarChart3, Settings } from 'lucide-react'
 import { useHabits } from '../../contexts/HabitsContext'
 import './BottomNav.css'
 
@@ -13,7 +13,6 @@ export default function BottomNav() {
   const navItems = [
     { to: '/', icon: Home, label: 'Início', badge: pendingCount },
     { to: '/habits', icon: CheckSquare, label: 'Hábitos' },
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/progress', icon: BarChart3, label: 'Progresso' },
     { to: '/settings', icon: Settings, label: 'Config' },
   ]
