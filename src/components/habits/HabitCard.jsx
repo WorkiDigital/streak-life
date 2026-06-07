@@ -5,7 +5,7 @@ import { useToast } from '../../contexts/ToastContext'
 import NutritionMealCard from '../nutrition/NutritionMealCard'
 import './HabitCard.css'
 
-export default function HabitCard({ schedule, nutritionMeal = null, nutritionMode = 'simples', onNutritionLogged }) {
+export default function HabitCard({ schedule, nutritionMeal = null, nutritionMode = 'simples', nutritionDate = null, onNutritionLogged }) {
   const [animating, setAnimating] = useState(false)
   const [showExtra, setShowExtra] = useState(false)
   const [showNutrition, setShowNutrition] = useState(false)
@@ -146,6 +146,7 @@ export default function HabitCard({ schedule, nutritionMeal = null, nutritionMod
         <NutritionMealCard
           meal={{ ...nutritionMeal, log: schedule.log?.nutrition_meal_log ?? nutritionMeal.log }}
           mode={nutritionMode}
+          date={nutritionDate}
           onLogged={onNutritionLogged}
         />
       )}

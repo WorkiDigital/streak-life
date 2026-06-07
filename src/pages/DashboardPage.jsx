@@ -15,6 +15,21 @@ import './DashboardPage.css'
 
 const BANNER_DISMISSED_KEY = 'nutrition_banner_dismissed'
 
+function todayInTz(timezone) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone || 'America/Fortaleza',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date())
+    const get = type => parts.find(part => part.type === type)?.value
+    return `${get('year')}-${get('month')}-${get('day')}`
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+}
+
 const PERIOD_OPTIONS = [
   { label: '7 dias', value: 7 },
   { label: '30 dias', value: 30 },
@@ -46,7 +61,7 @@ export default function DashboardPage() {
   // Mostra banner quando: perfil carregado + nutrition não ativo + não dispensado
   // nutrition_enabled pode ser false, null ou undefined — todos significam "sem plano"
   const showNutritionBanner = !!profile && profile.nutrition_enabled !== true && !bannerDismissed
-  const today = new Date().toISOString().slice(0, 10)
+  const today = useMemo(() => todayInTz(profile?.timezone), [profile?.timezone])
   const { data: nutritionData, refresh: refreshNutrition } = useTodayNutrition(
     profile?.nutrition_enabled ? today : null
   )
@@ -222,6 +237,7 @@ export default function DashboardPage() {
                     schedule={schedule}
                     nutritionMeal={nutritionMeal}
                     nutritionMode={profile?.nutrition_mode ?? 'simples'}
+                    nutritionDate={today}
                     onNutritionLogged={handleNutritionLogged}
                   />
                 )

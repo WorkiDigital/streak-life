@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
-import { CORS_HEADERS, getAdminClient, getUserFromRequest, jsonResponse } from '../_shared/agent.ts'
+import { CORS_HEADERS, getAdminClient, getUserFromRequest, jsonResponse, todayInTimezone } from '../_shared/agent.ts'
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
@@ -21,9 +21,16 @@ serve(async (req: Request) => {
       return jsonResponse({ error: 'meal_id e status são obrigatórios' }, { status: 400 })
     }
 
-    const today = date ?? new Date().toISOString().slice(0, 10)
     const userId = user.id
     const admin = getAdminClient()
+
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('timezone')
+      .eq('id', userId)
+      .maybeSingle()
+
+    const today = date ?? todayInTimezone(profile?.timezone)
 
     // Validar que o meal pertence ao usuário
     const { data: meal } = await admin

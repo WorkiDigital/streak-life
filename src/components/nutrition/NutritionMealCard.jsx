@@ -14,7 +14,7 @@ function formatQty(item) {
   return `${item.quantidade_min ?? item.quantidade_max}${un}`
 }
 
-export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) {
+export default function NutritionMealCard({ meal, mode = 'simples', date = null, onLogged }) {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [optimisticStatus, setOptimisticStatus] = useState(null)
@@ -37,7 +37,7 @@ export default function NutritionMealCard({ meal, mode = 'simples', onLogged }) 
     setOptimisticStatus(newStatus)
     setSaving(true)
     try {
-      await logMeal({ meal_id: meal.id, status: newStatus })
+      await logMeal({ meal_id: meal.id, status: newStatus, date })
       await onLogged?.()
       const messages = {
         feito: 'Refeição marcada como feita',
