@@ -11,8 +11,6 @@
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--color-border-subtle);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  transform: translateZ(0);
-  will-change: transform;
   isolation: isolate;
 }
 

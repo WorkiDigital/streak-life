@@ -177,7 +177,7 @@ export default function ChatPage({ onboardingMode = false }) {
   }, [user])
 
   return (
-    <div className={onboardingMode ? 'chat-shell onboarding-chat-shell' : 'page'}>
+    <div className={onboardingMode ? 'chat-shell onboarding-chat-shell' : 'chat-shell'}>
       <div className="container chat-page">
         <header className="chat-page-header">
           <div className="chat-title-row">

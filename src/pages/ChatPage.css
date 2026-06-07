@@ -1,9 +1,15 @@
 .chat-shell {
-  height: 100dvh;
+  height: calc(100dvh - var(--app-header-height) - var(--bottom-nav-height) - env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
+  padding-top: var(--app-header-height);
+}
+
+.chat-shell.onboarding-chat-shell {
+  height: 100dvh;
+  padding-top: 0;
 }
 
 .onboarding-chat-shell {

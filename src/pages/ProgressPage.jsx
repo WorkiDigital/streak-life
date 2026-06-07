@@ -14,19 +14,8 @@ const PERIOD_OPTIONS = [
   { label: '3 meses', value: 90 },
 ]
 
-const CATEGORY_FILTERS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'hidratacao', label: '💧' },
-  { value: 'treino', label: '🏋️' },
-  { value: 'alimentacao', label: '🍽️' },
-  { value: 'tela', label: '👀' },
-  { value: 'sono', label: '🌙' },
-  { value: 'outro', label: '📋' },
-]
-
 export default function ProgressPage() {
   const [period, setPeriod] = useState(30)
-  const [categoryFilter, setCategoryFilter] = useState('all')
   const [selectedHabit, setSelectedHabit] = useState(null)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const { getHeatmapData, getStats, getWeeklyStats, schedules, habits, logs, loading, refreshData } = useHabits()
@@ -35,13 +24,6 @@ export default function ProgressPage() {
   const { matrix, dates } = useMemo(() => getHeatmapData(period), [logs, schedules, period])
   const stats = useMemo(() => getStats(period), [logs, schedules, period])
   const weeklyData = useMemo(() => getWeeklyStats(8), [logs, schedules])
-
-  const filteredMatrix = categoryFilter === 'all'
-    ? matrix
-    : matrix.filter(row => {
-        const sched = schedules.find(s => s.habit_id === row.habitId)
-        return sched != null && sched.habits?.categoria === categoryFilter
-      })
 
   async function handleShare() {
     const text = `🔥 Estou com ${stats.streak} dias seguidos no Evolui!\n✅ ${stats.adherenceRate}% de adesão nos últimos ${period} dias\n💪 ${stats.totalDone} hábitos concluídos\n\nConsistência bate intensidade. #Evolui`
@@ -91,19 +73,6 @@ export default function ProgressPage() {
               <Share2 size={18} />
             </button>
           </div>
-        </div>
-
-        {/* Category filter */}
-        <div className="progress-filter-scroll">
-          {CATEGORY_FILTERS.map(f => (
-            <button
-              key={f.value}
-              className={`chip ${categoryFilter === f.value ? 'active' : ''}`}
-              onClick={() => setCategoryFilter(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
         </div>
 
         {/* Metas */}
@@ -209,24 +178,16 @@ export default function ProgressPage() {
           {loading ? (
             <div className="skeleton" style={{ height: 120 }} />
           ) : (
-            <HabitHeatmap matrix={filteredMatrix} dates={dates} />
+            <HabitHeatmap matrix={matrix} dates={dates} />
           )}
         </section>
 
         {/* Per-habit adherence */}
-        {filteredMatrix.length === 0 && categoryFilter !== 'all' ? (
-          <div className="progress-empty-filter glass-card">
-            <span style={{ fontSize: '2rem' }}>🔍</span>
-            <p className="text-secondary text-sm">Nenhum hábito nessa categoria.</p>
-            <button className="btn btn-ghost text-xs" onClick={() => setCategoryFilter('all')}>
-              Ver todos
-            </button>
-          </div>
-        ) : filteredMatrix.length > 0 && (
+        {matrix.length > 0 && (
           <section className="progress-per-habit">
             <h2 className="text-md font-semibold">Por hábito</h2>
             <div className="habit-adherence-list">
-              {filteredMatrix.map(row => {
+              {matrix.map(row => {
                 const done = row.cells.filter(c => c.status === 'done').length
                 const total = row.cells.filter(c => c.status === 'done' || c.status === 'missed').length
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0
