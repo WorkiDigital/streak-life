@@ -170,6 +170,8 @@ const DEFAULT_PROFILE_FORM = {
   restricoes_alimentares: '',
   observacoes_saude: '',
   nivel_estresse: '',
+  motivacao_pessoal: '',
+  horario_motivacao: '',
 }
 
 function textValue(value, fallback = '') {
@@ -230,6 +232,8 @@ function buildProfileForm(profile) {
     restricoes_alimentares: textValue(profile?.restricoes_alimentares),
     observacoes_saude: textValue(profile?.observacoes_saude),
     nivel_estresse: textValue(profile?.nivel_estresse),
+    motivacao_pessoal: textValue(profile?.motivacao_pessoal),
+    horario_motivacao: timeValue(profile?.horario_motivacao),
   }
 }
 
@@ -455,6 +459,8 @@ export default function SettingsPage() {
       restricoes_alimentares: emptyToNull(profileForm.restricoes_alimentares),
       observacoes_saude: emptyToNull(profileForm.observacoes_saude),
       nivel_estresse: emptyToNull(profileForm.nivel_estresse),
+      motivacao_pessoal: emptyToNull(profileForm.motivacao_pessoal),
+      horario_motivacao: emptyToNull(profileForm.horario_motivacao),
     }
 
     setSavingProfile(true)
@@ -868,6 +874,35 @@ export default function SettingsPage() {
                   {silentSaving ? <Loader2 size={16} className="spin" /> : silentMode ? <BellOff size={16} /> : <Bell size={16} />}
                 </div>
               </button>
+
+              <div className="settings-divider" />
+
+              <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                <div className="settings-row-info">
+                  <span className="settings-row-label">💡 Lembrete de motivacao</span>
+                  <span className="settings-row-desc">1 mensagem por dia conectada ao seu motivo pessoal</span>
+                </div>
+                <div className="input-group" style={{ width: '100%' }}>
+                  <label className="input-label" htmlFor="settings-motivacao">Por que voce quer mudar?</label>
+                  <textarea
+                    id="settings-motivacao"
+                    className="input settings-textarea"
+                    placeholder="Ex: quero ter energia para brincar com meu filho e sair dos remedios ate os 40 anos"
+                    value={profileForm.motivacao_pessoal}
+                    onChange={e => updateField('motivacao_pessoal', e.target.value)}
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-horario-motivacao">Horario do lembrete</label>
+                  <input
+                    id="settings-horario-motivacao"
+                    type="time"
+                    className="input"
+                    value={profileForm.horario_motivacao}
+                    onChange={e => updateField('horario_motivacao', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </SettingsSection>
         )}

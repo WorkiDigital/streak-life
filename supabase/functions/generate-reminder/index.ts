@@ -27,6 +27,7 @@ serve(async (req: Request) => {
       dias_treino,
       peso_kg,
       peso_meta_kg,
+      motivacao_pessoal,
     } = await req.json()
 
     if (!habitName) {
@@ -41,7 +42,10 @@ serve(async (req: Request) => {
     }
 
     let extraContext = ''
-    if (category === 'hidratacao' && agua_litros_diaria) {
+    if (category === 'motivacao') {
+      const motivo = motivacao_pessoal || objetivo || 'melhorar a saude'
+      extraContext = `Esse e um lembrete diario de motivacao pessoal. O usuario disse: "${motivo}". Gere uma frase curta, humana e especifica que relembre esse motivo de forma encorajadora. Nao mencione habitos ou tarefas — apenas conecte o momento do dia com o proposito pessoal dele.`
+    } else if (category === 'hidratacao' && agua_litros_diaria) {
       extraContext = `Meta de hidratacao do usuario: ${agua_litros_diaria}L por dia. Mencione a meta de forma encorajadora (ex: "Mais um copo para chegar nos ${agua_litros_diaria}L hoje!").`
     } else if (category === 'alimentacao') {
       if (objetivo === 'emagrecer' && peso_kg && peso_meta_kg) {

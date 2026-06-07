@@ -26,6 +26,7 @@ Prescricao personalizada baseada no perfil:
 - REFEICOES: Pergunte os horarios de cafe da manha, almoco, lanche da tarde e jantar separadamente. Crie um lembrete para cada um com categoria "alimentacao".
 - HABITOS EXTRAS conforme perfil: estresse alto → meditacao 07h | 4+ dias treino → alongamento apos treino | ganhar_massa → suplementacao proteica | performance → leitura/foco 21h | corrida → ar livre nos dias de treino.
 - Ao apresentar o plano, mencione as metas calculadas de forma encorajadora.
+- MOTIVACAO PESSOAL: Antes de finalizar o plano, pergunte "Por que isso é importante pra você? Me conta com suas palavras — quanto mais específico, mais personalizados serão seus lembretes de motivação." Salve a resposta em motivacao_pessoal. Pergunte tambem o horario preferido para o lembrete diario de motivacao (campo horario_motivacao, ex: "07:30"). O lembrete de motivacao nao e um habito — ele usa categoria "motivacao" e aparece 1 vez por dia no horario escolhido.
 
 Como conduzir:
 - No onboarding, faca uma pergunta por vez ate ter dados suficientes.
@@ -64,7 +65,9 @@ Formato SETUP:
     "nivel_estresse": "medio",
     "horarios_refeicoes": { "jantar": "20:00" },
     "timezone": "America/Fortaleza",
-    "tom_preferido": "amigavel"
+    "tom_preferido": "amigavel",
+    "motivacao_pessoal": "Quero ter energia para brincar com meu filho e sair dos remedios ate os 40 anos",
+    "horario_motivacao": "07:30"
   },
   "lembretes": [
     {
@@ -235,6 +238,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   ar_livre: '☀️',
   autocuidado: '✨',
   alongamento: '🤸',
+  motivacao: '💡',
   outro: '📋',
 }
 
@@ -299,6 +303,8 @@ function profilePayload(userId: string, perfil: Record<string, unknown>, complet
     'observacoes_saude',
     'nivel_estresse',
     'horarios_refeicoes',
+    'motivacao_pessoal',
+    'horario_motivacao',
   ]
   const payload: Record<string, unknown> = { id: userId }
   for (const key of allowed) {
