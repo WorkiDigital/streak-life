@@ -3,6 +3,15 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+function withTimeout(promise, ms = 8000, label = 'request') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(`${label} timeout`)), ms)
+    }),
+  ])
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -41,8 +50,10 @@ export function AuthProvider({ children }) {
   }
 
   function sendAuthToSW(session, tz) {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
+    if (!('serviceWorker' in navigator)) return
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
         if (registration.active) {
           registration.active.postMessage({
             type: 'SET_SUPABASE_AUTH',
@@ -54,60 +65,114 @@ export function AuthProvider({ children }) {
           })
         }
       })
-    }
+      .catch((error) => {
+        console.warn('Unable to send auth to service worker:', error)
+      })
   }
 
   function clearAuthFromSW() {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
+    if (!('serviceWorker' in navigator)) return
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
         registration.active?.postMessage({ type: 'CLEAR_SUPABASE_AUTH' })
       })
-    }
+      .catch((error) => {
+        console.warn('Unable to clear auth from service worker:', error)
+      })
   }
 
   useEffect(() => {
-    // Check active session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    let mounted = true
+
+    async function hydrateUserFromSession(session, source = 'auth') {
       const currentUser = session?.user ?? null
+
+      if (!mounted) return
       setUser(currentUser)
 
-      if (currentUser) {
-        let prof = await fetchProfile(currentUser.id)
-        if (!prof) {
-          prof = await createProfile(currentUser.id, currentUser.email)
-        }
-        setProfile(prof)
-        sendAuthToSW(session, prof?.timezone)
-      } else {
+      if (!currentUser) {
+        setProfile(null)
         clearAuthFromSW()
+        return
       }
 
-      setLoading(false)
-    })
+      try {
+        let prof = await withTimeout(
+          fetchProfile(currentUser.id),
+          8000,
+          `fetchProfile:${source}`
+        )
+
+        if (!prof) {
+          prof = await withTimeout(
+            createProfile(currentUser.id, currentUser.email),
+            8000,
+            `createProfile:${source}`
+          )
+        }
+
+        if (!mounted) return
+        setProfile(prof)
+        sendAuthToSW(session, prof?.timezone)
+      } catch (error) {
+        console.error('Auth profile hydration failed:', error)
+
+        if (mounted) {
+          setProfile(null)
+        }
+      }
+    }
+
+    async function initAuth() {
+      setLoading(true)
+
+      try {
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          8000,
+          'getSession'
+        )
+
+        await hydrateUserFromSession(data?.session, 'init')
+      } catch (error) {
+        console.error('Auth init failed:', error)
+
+        if (mounted) {
+          setUser(null)
+          setProfile(null)
+          clearAuthFromSW()
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    initAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
+        setLoading(true)
 
-        if (currentUser) {
-          let prof = await fetchProfile(currentUser.id)
-          if (!prof) {
-            prof = await createProfile(currentUser.id, currentUser.email)
+        try {
+          await hydrateUserFromSession(session, 'state-change')
+        } catch (error) {
+          console.error('Auth state change failed:', error)
+        } finally {
+          if (mounted) {
+            setLoading(false)
           }
-          setProfile(prof)
-          sendAuthToSW(session, prof?.timezone)
-        } else {
-          setProfile(null)
-          clearAuthFromSW()
         }
-
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function signUp(email, password) {
