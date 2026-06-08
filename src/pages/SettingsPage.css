@@ -43,6 +43,22 @@
   padding-top: var(--space-4);
 }
 
+.settings-group-plan { order: 10; }
+#settings-section-body { order: 11; }
+#settings-section-routine { order: 12; }
+#settings-section-training { order: 13; }
+#settings-section-health { order: 14; }
+#settings-section-motivation { order: 15; }
+#settings-section-nutrition { order: 16; }
+#settings-section-goals { order: 17; }
+.settings-group-reminders { order: 20; }
+#settings-section-notifications { order: 21; }
+.settings-group-account { order: 30; }
+#settings-section-personal { order: 31; }
+#settings-section-appearance { order: 32; }
+#settings-section-about { order: 33; }
+.btn-logout { order: 34; }
+
 .settings-page-header {
   display: flex;
   align-items: center;
@@ -337,6 +353,14 @@
   padding: var(--space-4);
 }
 
+.settings-control-title {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .settings-search {
   display: flex;
   align-items: center;
@@ -405,6 +429,7 @@
 .settings-shortcut-label,
 .settings-shortcut-value {
   display: block;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -506,6 +531,16 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   line-height: 1.35;
+}
+
+.settings-row-stacked {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.settings-full-width {
+  width: 100%;
 }
 
 .toggle-switch {

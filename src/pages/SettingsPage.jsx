@@ -17,6 +17,7 @@ import {
   Scale,
   Search,
   Shield,
+  Sparkles,
   Sun,
   Target,
   Utensils,
@@ -89,9 +90,9 @@ const ROUTINE_FIELDS = [
 
 const SECTION_META = {
   personal: {
-    title: 'Dados pessoais',
-    description: 'Nome, contato, timezone e tom dos lembretes',
-    keywords: 'dados pessoais nome whatsapp contato timezone tom lembretes',
+    title: 'Dados da conta',
+    description: 'Nome, contato, idade e timezone',
+    keywords: 'dados pessoais conta nome whatsapp contato idade sexo timezone',
   },
   body: {
     title: 'Corpo e objetivo',
@@ -113,10 +114,15 @@ const SECTION_META = {
     description: 'Preferencias, restricoes e observacoes',
     keywords: 'alimentacao saude preferencias restricoes estresse observacoes',
   },
+  motivation: {
+    title: 'Motivacao pessoal',
+    description: 'Motivo de mudanca e horario do lembrete',
+    keywords: 'motivacao motivo pessoal mudar lembrete mensagem diaria horario',
+  },
   notifications: {
-    title: 'Notificacoes',
-    description: 'Push, WhatsApp, canais e modo silencio',
-    keywords: 'notificacoes push whatsapp canais lembrete silencio',
+    title: 'Canais e horarios',
+    description: 'Push, WhatsApp, tom e modo silencio',
+    keywords: 'notificacoes push whatsapp canais lembrete silencio tom horarios',
   },
   nutrition: {
     title: 'Plano alimentar',
@@ -325,33 +331,33 @@ export default function SettingsPage() {
   const shortcuts = useMemo(() => ([
     {
       id: 'notifications',
-      label: 'Notificacoes',
-      value: isPushActive ? 'Push ativo' : 'Ativar push',
+      label: 'Push',
+      value: isPushActive ? 'Ativo' : 'Configurar',
       icon: <Bell size={16} />,
-      action: togglePushNotifications,
+      action: () => jumpToSection('notifications'),
+    },
+    {
+      id: 'silent-mode',
+      label: 'Modo silencio',
+      value: silentMode ? 'Ligado' : 'Desligado',
+      icon: <BellOff size={16} />,
+      action: () => jumpToSection('notifications'),
     },
     {
       id: 'nutrition',
       label: 'Plano alimentar',
       value: profile?.nutrition_enabled ? 'Ativo' : 'Desativado',
       icon: <Utensils size={16} />,
-      action: handleNutritionToggle,
+      action: () => jumpToSection('nutrition'),
     },
     {
       id: 'goals',
       label: 'Metas',
       value: profile?.goals_enabled !== false ? 'Ativas' : 'Pausadas',
       icon: <Target size={16} />,
-      action: handleGoalsToggle,
+      action: () => jumpToSection('goals'),
     },
-    {
-      id: 'routine',
-      label: 'Rotina',
-      value: profileForm.horario_acordar || 'Editar',
-      icon: <Clock3 size={16} />,
-      action: () => jumpToSection('routine'),
-    },
-  ]), [isPushActive, profile?.nutrition_enabled, profile?.goals_enabled, profileForm.horario_acordar]) // eslint-disable-line react-hooks/exhaustive-deps
+  ]), [isPushActive, silentMode, profile?.nutrition_enabled, profile?.goals_enabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateField(field, value) {
     setProfileForm(prev => ({ ...prev, [field]: value }))
@@ -592,7 +598,7 @@ export default function SettingsPage() {
         <div className="settings-page-header">
           <div>
             <h1 className="text-2xl font-bold">Configuracoes</h1>
-            <p className="settings-page-subtitle">Ajuste somente o que precisa, sem rolar por tudo.</p>
+            <p className="settings-page-subtitle">Ajuste o que precisa.</p>
           </div>
           {profile?.onboarding_completed && <span className="badge badge-done">Plano ativo</span>}
         </div>
@@ -617,6 +623,7 @@ export default function SettingsPage() {
               onChange={e => setSettingsQuery(e.target.value)}
             />
           </label>
+          <div className="settings-control-title">Inicio rapido</div>
           <div className="settings-shortcuts" aria-label="Atalhos">
             {shortcuts.map(item => (
               <button
@@ -641,8 +648,8 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {['personal', 'body', 'health'].some(id => isSectionVisible(id)) && (
-          <div className="settings-group-label">Perfil</div>
+        {['body', 'routine', 'training', 'health', 'motivation', 'nutrition', 'goals'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label settings-group-plan">Meu plano</div>
         )}
 
         {isSectionVisible('personal') && (
@@ -677,16 +684,6 @@ export default function SettingsPage() {
                 <div className="input-group">
                   <label className="input-label" htmlFor="settings-timezone">Timezone</label>
                   <input id="settings-timezone" className="input" value={profileForm.timezone} onChange={e => updateField('timezone', e.target.value)} />
-                </div>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Tom dos lembretes</label>
-                <div className="settings-chip-options">
-                  {TOM_OPTIONS.map(opt => (
-                    <button type="button" key={opt.value} className={`chip ${profileForm.tom_preferido === opt.value ? 'active' : ''}`} onClick={() => updateField('tom_preferido', opt.value)}>
-                      {opt.label}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>
@@ -732,10 +729,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </SettingsSection>
-        )}
-
-        {['routine', 'training', 'nutrition'].some(id => isSectionVisible(id)) && (
-          <div className="settings-group-label">Rotina &amp; Saúde</div>
         )}
 
         {isSectionVisible('routine') && (
@@ -813,8 +806,41 @@ export default function SettingsPage() {
           </SettingsSection>
         )}
 
-        {['notifications', 'goals', 'appearance', 'about'].some(id => isSectionVisible(id)) && (
-          <div className="settings-group-label">Aplicativo</div>
+        {isSectionVisible('motivation') && (
+          <SettingsSection id="motivation" title={SECTION_META.motivation.title} description={SECTION_META.motivation.description} icon={<Sparkles size={18} />} open={isSectionOpen('motivation')} onToggle={() => toggleSection('motivation')}>
+            <div className="settings-card glass-card">
+              <div className="settings-row settings-row-stacked">
+                <div className="settings-row-info">
+                  <span className="settings-row-label">Motivo pessoal</span>
+                  <span className="settings-row-desc">Base para a mensagem diaria de motivacao.</span>
+                </div>
+                <div className="input-group settings-full-width">
+                  <label className="input-label" htmlFor="settings-motivacao">Por que voce quer mudar?</label>
+                  <textarea
+                    id="settings-motivacao"
+                    className="input settings-textarea"
+                    placeholder="Ex: quero ter energia para brincar com meu filho"
+                    value={profileForm.motivacao_pessoal}
+                    onChange={e => updateField('motivacao_pessoal', e.target.value)}
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-horario-motivacao">Horario do lembrete</label>
+                  <input
+                    id="settings-horario-motivacao"
+                    type="time"
+                    className="input"
+                    value={profileForm.horario_motivacao}
+                    onChange={e => updateField('horario_motivacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </SettingsSection>
+        )}
+
+        {['notifications'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label settings-group-reminders">Lembretes</div>
         )}
 
         {isSectionVisible('notifications') && (
@@ -877,30 +903,17 @@ export default function SettingsPage() {
 
               <div className="settings-divider" />
 
-              <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+              <div className="settings-row settings-row-stacked">
                 <div className="settings-row-info">
-                  <span className="settings-row-label">💡 Lembrete de motivacao</span>
-                  <span className="settings-row-desc">1 mensagem por dia conectada ao seu motivo pessoal</span>
+                  <span className="settings-row-label">Tom dos lembretes</span>
+                  <span className="settings-row-desc">Estilo usado nas mensagens do app.</span>
                 </div>
-                <div className="input-group" style={{ width: '100%' }}>
-                  <label className="input-label" htmlFor="settings-motivacao">Por que voce quer mudar?</label>
-                  <textarea
-                    id="settings-motivacao"
-                    className="input settings-textarea"
-                    placeholder="Ex: quero ter energia para brincar com meu filho e sair dos remedios ate os 40 anos"
-                    value={profileForm.motivacao_pessoal}
-                    onChange={e => updateField('motivacao_pessoal', e.target.value)}
-                  />
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="settings-horario-motivacao">Horario do lembrete</label>
-                  <input
-                    id="settings-horario-motivacao"
-                    type="time"
-                    className="input"
-                    value={profileForm.horario_motivacao}
-                    onChange={e => updateField('horario_motivacao', e.target.value)}
-                  />
+                <div className="settings-chip-options">
+                  {TOM_OPTIONS.map(opt => (
+                    <button type="button" key={opt.value} className={`chip ${profileForm.tom_preferido === opt.value ? 'active' : ''}`} onClick={() => updateField('tom_preferido', opt.value)}>
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1027,6 +1040,10 @@ export default function SettingsPage() {
               )}
             </div>
           </SettingsSection>
+        )}
+
+        {['personal', 'appearance', 'about'].some(id => isSectionVisible(id)) && (
+          <div className="settings-group-label settings-group-account">Conta e app</div>
         )}
 
         {isSectionVisible('appearance') && (
