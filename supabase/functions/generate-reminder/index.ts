@@ -44,7 +44,29 @@ serve(async (req: Request) => {
     let extraContext = ''
     if (category === 'motivacao') {
       const motivo = motivacao_pessoal || objetivo || 'melhorar a saude'
-      extraContext = `Esse e um lembrete diario de motivacao pessoal. O usuario disse: "${motivo}". Gere uma frase curta, humana e especifica que relembre esse motivo de forma encorajadora. Nao mencione habitos ou tarefas — apenas conecte o momento do dia com o proposito pessoal dele.`
+
+      // Busca ultimas 7 mensagens de motivacao para evitar repeticao de angulo
+      let ultimasMensagens = ''
+      if (userId) {
+        const admin = getAdminClient()
+        const { data: recentes } = await admin
+          .from('reminders_sent')
+          .select('mensagem, enviado_em')
+          .eq('user_id', userId)
+          .eq('canal', 'push')
+          .like('mensagem', '%💡%')
+          .order('enviado_em', { ascending: false })
+          .limit(7)
+
+        if (recentes && recentes.length > 0) {
+          ultimasMensagens = `\nMensagens recentes ja enviadas (NAO repita o mesmo angulo):\n${recentes.map((r: any) => `- ${r.mensagem}`).join('\n')}`
+        }
+      }
+
+      const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado']
+      const diaSemana = diasSemana[new Date().getDay()]
+
+      extraContext = `Esse e um lembrete diario de motivacao pessoal. O usuario disse: "${motivo}". Hoje e ${diaSemana}. Gere uma frase curta, humana e especifica que relembre esse motivo de forma encorajadora — use um angulo diferente a cada dia (ex: fisico, emocional, social, conquista futura, momento presente). Nao mencione habitos ou tarefas.${ultimasMensagens}`
     } else if (category === 'hidratacao' && agua_litros_diaria) {
       extraContext = `Meta de hidratacao do usuario: ${agua_litros_diaria}L por dia. Mencione a meta de forma encorajadora (ex: "Mais um copo para chegar nos ${agua_litros_diaria}L hoje!").`
     } else if (category === 'alimentacao') {
