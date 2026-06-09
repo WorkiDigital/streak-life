@@ -652,44 +652,6 @@ export default function SettingsPage() {
           <div className="settings-group-label settings-group-plan">Meu plano</div>
         )}
 
-        {isSectionVisible('personal') && (
-          <SettingsSection
-            id="personal"
-            title={SECTION_META.personal.title}
-            description={SECTION_META.personal.description}
-            icon={<User size={18} />}
-            open={isSectionOpen('personal')}
-            onToggle={() => toggleSection('personal')}
-          >
-            <div className="settings-card glass-card">
-              <div className="settings-form-grid">
-                <div className="input-group settings-field-wide">
-                  <label className="input-label" htmlFor="settings-nome">Nome</label>
-                  <input id="settings-nome" className="input" value={profileForm.nome} onChange={e => updateField('nome', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="settings-whatsapp">WhatsApp</label>
-                  <input id="settings-whatsapp" type="tel" className="input" placeholder="+55 85 99999-9999" value={profileForm.whatsapp} onChange={e => updateField('whatsapp', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="settings-idade">Idade</label>
-                  <input id="settings-idade" type="number" min="0" className="input" value={profileForm.idade} onChange={e => updateField('idade', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="settings-sexo">Sexo</label>
-                  <select id="settings-sexo" className="input" value={profileForm.sexo} onChange={e => updateField('sexo', e.target.value)}>
-                    {SEX_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="settings-timezone">Timezone</label>
-                  <input id="settings-timezone" className="input" value={profileForm.timezone} onChange={e => updateField('timezone', e.target.value)} />
-                </div>
-              </div>
-            </div>
-          </SettingsSection>
-        )}
-
         {isSectionVisible('body') && (
           <SettingsSection id="body" title={SECTION_META.body.title} description={SECTION_META.body.description} icon={<Scale size={18} />} open={isSectionOpen('body')} onToggle={() => toggleSection('body')}>
             <div className="settings-card glass-card">
@@ -1044,6 +1006,44 @@ export default function SettingsPage() {
 
         {['personal', 'appearance', 'about'].some(id => isSectionVisible(id)) && (
           <div className="settings-group-label settings-group-account">Conta e app</div>
+        )}
+
+        {isSectionVisible('personal') && (
+          <SettingsSection
+            id="personal"
+            title={SECTION_META.personal.title}
+            description={SECTION_META.personal.description}
+            icon={<User size={18} />}
+            open={isSectionOpen('personal')}
+            onToggle={() => toggleSection('personal')}
+          >
+            <div className="settings-card glass-card">
+              <div className="settings-form-grid">
+                <div className="input-group settings-field-wide">
+                  <label className="input-label" htmlFor="settings-nome">Nome</label>
+                  <input id="settings-nome" className="input" value={profileForm.nome} onChange={e => updateField('nome', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-whatsapp">WhatsApp</label>
+                  <input id="settings-whatsapp" type="tel" className="input" placeholder="+55 85 99999-9999" value={profileForm.whatsapp} onChange={e => updateField('whatsapp', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-idade">Idade</label>
+                  <input id="settings-idade" type="number" min="0" className="input" value={profileForm.idade} onChange={e => updateField('idade', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-sexo">Sexo</label>
+                  <select id="settings-sexo" className="input" value={profileForm.sexo} onChange={e => updateField('sexo', e.target.value)}>
+                    {SEX_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label" htmlFor="settings-timezone">Timezone</label>
+                  <input id="settings-timezone" className="input" value={profileForm.timezone} onChange={e => updateField('timezone', e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </SettingsSection>
         )}
 
         {isSectionVisible('appearance') && (

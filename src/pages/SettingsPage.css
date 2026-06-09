@@ -1,16 +1,46 @@
-/* Separadores de grupo nas Settings */
 .settings-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 58px;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary));
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  padding: var(--space-3) var(--space-1) var(--space-1);
-  margin-top: var(--space-2);
 }
 
 .settings-group-label:first-of-type {
   margin-top: 0;
+}
+
+.settings-group-label::after {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.settings-group-plan::after {
+  content: 'Objetivo, rotina, treino, alimentacao, motivacao, plano e metas.';
+}
+
+.settings-group-reminders::after {
+  content: 'Push, WhatsApp, modo silencio e tom das mensagens.';
+}
+
+.settings-group-account::after {
+  content: 'Dados da conta, aparencia, aviso de saude e saida.';
 }
 
 .channel-toggle {

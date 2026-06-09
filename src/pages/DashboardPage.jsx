@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Flame, Target, TrendingUp, Calendar } from 'lucide-react'
+import { ArrowRight, Clock3, Flame, Target, TrendingUp, Calendar, Utensils } from 'lucide-react'
 import { useHabits } from '../contexts/HabitsContext'
 import { useAuth } from '../contexts/AuthContext'
 import HabitCard from '../components/habits/HabitCard'
@@ -35,6 +35,13 @@ const PERIOD_OPTIONS = [
   { label: '30 dias', value: 30 },
   { label: '3 meses', value: 90 },
 ]
+
+function timeToMinutes(value) {
+  if (!value) return Number.POSITIVE_INFINITY
+  const [hour, minute] = String(value).slice(0, 5).split(':').map(Number)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return Number.POSITIVE_INFINITY
+  return hour * 60 + minute
+}
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState(30)
@@ -98,6 +105,57 @@ export default function DashboardPage() {
   const doneCount = todayHabits.filter(h => h.status === 'feito').length
   const totalCount = todayHabits.length
   const progressPct = totalCount > 0 ? (doneCount / totalCount) * 100 : 0
+  const pendingHabits = useMemo(
+    () => todayHabits.filter(item => item.status !== 'feito'),
+    [todayHabits]
+  )
+  const completedMeals = useMemo(
+    () => (nutritionData?.meals ?? []).filter(meal => meal.log?.status === 'feito' || meal.log?.status === 'adaptado').length,
+    [nutritionData]
+  )
+  const nextAction = useMemo(() => {
+    const now = new Date()
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    const pendingMeals = (nutritionData?.meals ?? [])
+      .filter(meal => meal.log?.status !== 'feito' && meal.log?.status !== 'adaptado')
+      .sort((a, b) => timeToMinutes(a.horario) - timeToMinutes(b.horario))
+
+    const nextMeal = pendingMeals.find(meal => timeToMinutes(meal.horario) >= nowMinutes) ?? pendingMeals[0]
+    const nextHabit = pendingHabits.find(item => timeToMinutes(item.horario) >= nowMinutes) ?? pendingHabits[0]
+    const mealTime = timeToMinutes(nextMeal?.horario)
+    const habitTime = timeToMinutes(nextHabit?.horario)
+
+    if (nextMeal && mealTime <= habitTime) {
+      return {
+        type: 'meal',
+        title: nextMeal.nome || 'Proxima refeicao',
+        time: nextMeal.horario?.slice(0, 5) ?? '--:--',
+        meta: 'Plano alimentar',
+        description: nextMeal.descricao_simples || 'Veja o plano e marque a refeicao.',
+      }
+    }
+
+    if (nextHabit) {
+      const habit = nextHabit.habit || nextHabit.habits
+      return {
+        type: 'habit',
+        title: habit?.nome || 'Proximo habito',
+        time: nextHabit.horario?.slice(0, 5) ?? '--:--',
+        meta: 'Habito pendente',
+        description: nextHabit.horarios?.length > 1
+          ? `${nextHabit.horarios.length} horarios previstos hoje`
+          : 'Marque quando concluir.',
+      }
+    }
+
+    return {
+      type: 'done',
+      title: 'Rotina do dia concluida',
+      time: 'Hoje',
+      meta: 'Sem pendencias',
+      description: 'Nao ha habitos ou refeicoes pendentes agora.',
+    }
+  }, [nutritionData, pendingHabits])
 
   // Dispara celebração ao completar 100% dos hábitos do dia
   useEffect(() => {
@@ -164,6 +222,37 @@ export default function DashboardPage() {
           <NutritionBanner onClick={() => setShowSetupModal(true)} onDismiss={dismissBanner} />
         )}
 
+        <section className="daily-panel glass-card">
+          <div className="next-action-card">
+            <div className="next-action-icon" aria-hidden="true">
+              {nextAction.type === 'meal' ? <Utensils size={20} /> : <Clock3 size={20} />}
+            </div>
+            <div className="next-action-copy">
+              <span className="next-action-kicker">Agora</span>
+              <h2>{nextAction.title}</h2>
+              <p>{nextAction.time} - {nextAction.meta}</p>
+              <span>{nextAction.description}</span>
+            </div>
+            <button type="button" className="next-action-button" onClick={scrollToTodayPlan} aria-label="Ver acao de agora">
+              <ArrowRight size={18} />
+            </button>
+          </div>
+          <div className="daily-panel-metrics" aria-label="Resumo do dia">
+            <div>
+              <span>{pendingHabits.length}</span>
+              <strong>Habitos restantes</strong>
+            </div>
+            <div>
+              <span>{Math.round(progressPct)}%</span>
+              <strong>Conclusao hoje</strong>
+            </div>
+            <div>
+              <span>{nutritionData?.meals?.length ? `${completedMeals}/${nutritionData.meals.length}` : '-'}</span>
+              <strong>Refeicoes</strong>
+            </div>
+          </div>
+        </section>
+
         {/* Today Section */}
         <section className="dashboard-section">
           <div className="dashboard-today-header">
@@ -202,7 +291,7 @@ export default function DashboardPage() {
               <div className="nutrition-today-head">
                 <div>
                   <h3>Plano alimentar de hoje</h3>
-                  <p>{nutritionData.meals.filter(meal => meal.log?.status === 'feito' || meal.log?.status === 'adaptado').length} de {nutritionData.meals.length} refeicoes concluidas</p>
+                  <p>{completedMeals} de {nutritionData.meals.length} refeicoes concluidas</p>
                 </div>
                 <button className="btn btn-secondary" onClick={scrollToTodayPlan}>Ver plano</button>
               </div>

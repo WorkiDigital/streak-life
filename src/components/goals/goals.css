@@ -272,6 +272,32 @@
   font-size: var(--font-size-sm);
 }
 
+.goal-step-indicator {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.goal-step-indicator span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.goal-step-indicator span.active {
+  border-color: var(--color-accent);
+  background: var(--color-done-subtle);
+  color: var(--color-done);
+}
+
 .goal-modal-close {
   width: 36px;
   height: 36px;
@@ -336,7 +362,7 @@
 .goal-tracking-option {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
   padding: var(--space-3);
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border);
@@ -348,11 +374,51 @@
 .goal-tracking-option span {
   color: var(--color-text-secondary);
   font-size: 12px;
+  line-height: 1.35;
 }
 
 .goal-tracking-option.active {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-secondary));
+}
+
+.goal-mode-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.goal-mode-facts small {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.goal-tracking-option.active .goal-mode-facts small {
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-bg-tertiary));
+  color: var(--color-text-primary);
+}
+
+.goal-mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-bg));
+}
+
+.goal-mode-panel p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
 }
 
 .goal-day-picker {

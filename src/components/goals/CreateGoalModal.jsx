@@ -24,16 +24,19 @@ const TRACKING_OPTIONS = [
     value: 'manual',
     title: 'Meta simples',
     desc: 'So acompanhar progresso, sem criar habito e sem lembrete.',
+    facts: ['Cria meta', 'Registro manual', 'Sem lembrete'],
   },
   {
     value: 'linked_habit',
     title: 'Conectar a habito existente',
     desc: 'A meta acompanha um habito que voce ja usa.',
+    facts: ['Cria meta', 'Usa habito atual', 'Nao cria lembrete novo'],
   },
   {
     value: 'habit_with_reminder',
     title: 'Criar habito e lembrete',
     desc: 'Cria uma acao com horario para ajudar a executar.',
+    facts: ['Cria meta', 'Cria habito', 'Cria lembrete'],
   },
 ]
 
@@ -136,11 +139,16 @@ export default function CreateGoalModal({ habits = [], onClose, onCreated }) {
         <div className="goal-modal-header">
           <div>
             <h2>Criar meta</h2>
-            <p>Voce nao precisa criar lembrete para toda meta.</p>
+            <p>Escolha se a meta sera manual, conectada a um habito ou criada com lembrete.</p>
           </div>
           <button type="button" className="goal-modal-close" onClick={onClose} aria-label="Fechar">
             <X size={20} />
           </button>
+        </div>
+
+        <div className="goal-step-indicator" aria-label={`Etapa ${step} de 2`}>
+          <span className={step === 1 ? 'active' : ''}>1 Dados</span>
+          <span className={step === 2 ? 'active' : ''}>2 Acompanhamento</span>
         </div>
 
         {step === 1 ? (
@@ -205,24 +213,34 @@ export default function CreateGoalModal({ habits = [], onClose, onCreated }) {
                 >
                   <strong>{option.title}</strong>
                   <span>{option.desc}</span>
+                  <div className="goal-mode-facts" aria-hidden="true">
+                    {option.facts.map(fact => (
+                      <small key={fact}>{fact}</small>
+                    ))}
+                  </div>
                 </button>
               ))}
             </div>
 
             {needsHabit && (
-              <label className="goal-field full">
-                <span>Escolha um habito</span>
-                <select value={form.linked_habit_id} onChange={e => update('linked_habit_id', e.target.value)}>
-                  <option value="">Selecione...</option>
-                  {userHabits.map(habit => (
-                    <option key={habit.id} value={habit.id}>{habit.nome}</option>
-                  ))}
-                </select>
-              </label>
+              <div className="goal-mode-panel">
+                <p>Essa meta usara os lembretes que o habito ja tiver. Nenhum novo horario sera criado.</p>
+                <label className="goal-field full">
+                  <span>Escolha um habito</span>
+                  <select value={form.linked_habit_id} onChange={e => update('linked_habit_id', e.target.value)}>
+                    <option value="">Selecione...</option>
+                    {userHabits.map(habit => (
+                      <option key={habit.id} value={habit.id}>{habit.nome}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             )}
 
             {needsNewHabit && (
-              <div className="goal-form-grid">
+              <div className="goal-mode-panel">
+                <p>Essa opcao cria a meta, um habito vinculado e um horario de lembrete.</p>
+                <div className="goal-form-grid">
                 <label className="goal-field full">
                   <span>Nome do habito</span>
                   <input
@@ -256,6 +274,7 @@ export default function CreateGoalModal({ habits = [], onClose, onCreated }) {
                     ))}
                   </div>
                 </div>
+              </div>
               </div>
             )}
           </div>
